@@ -90,15 +90,17 @@ export default function HourlyForecast({ hourlyData }) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '8px',
         fontSize: '10px',
         fontFamily: 'var(--font-data)',
         color: 'var(--text-tertiary)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <LucideIcons.TrendingUp size={12} style={{ color: 'var(--accent)' }} />
-          <span>12-HOUR TREND: {hours[0]?.temp}°C ➔ {hours[hours.length - 1]?.temp}°C</span>
+          <LucideIcons.TrendingUp size={12} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+          <span>TREND: {hours[0]?.temp}°C ➔ {hours[hours.length - 1]?.temp}°C</span>
         </div>
-        <span style={{ color: 'rgba(255,255,255,0.6)' }}>PRECIPITATION & TEMP CONSENSUS</span>
+        <span style={{ color: 'rgba(255,255,255,0.6)', marginLeft: 'auto' }}>CONSENSUS TELEMETRY</span>
       </div>
     </div>
   );

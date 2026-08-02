@@ -77,15 +77,17 @@ export default function DailyForecast({ dailyData }) {
         display: 'flex',
         alignItems: 'center',
         justify: 'space-between',
+        flexWrap: 'wrap',
+        gap: '8px',
         fontSize: '10px',
         fontFamily: 'var(--font-data)',
         color: 'var(--text-tertiary)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <LucideIcons.CloudRain size={12} style={{ color: '#60A5FA' }} />
-          <span>RAIN FORECAST: {rainDaysCount} OF 7 DAYS</span>
+          <LucideIcons.CloudRain size={12} style={{ color: '#60A5FA', flexShrink: 0 }} />
+          <span>RAIN: {rainDaysCount} / 7 DAYS</span>
         </div>
-        <span style={{ color: '#FBBF24', fontWeight: 600 }}>MAX: {globalMax}°C</span>
+        <span style={{ color: '#FBBF24', fontWeight: 600, marginLeft: 'auto' }}>MAX: {globalMax}°C</span>
       </div>
     </div>
   );
