@@ -10,6 +10,7 @@ import RadarMap from './RadarMap';
 import AnimatedBackground from './AnimatedBackground';
 import NewsHub from './NewsHub';
 import SunMoonTracker from './SunMoonTracker';
+import RegionalAlerts from './RegionalAlerts';
 import AirQualityPanel from './AirQualityPanel';
 import WillItRainWidget from './WillItRainWidget';
 import ModelComparison from './ModelComparison';

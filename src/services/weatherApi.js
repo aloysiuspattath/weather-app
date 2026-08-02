@@ -186,11 +186,71 @@ export async function getWeatherData(lat, lon) {
       data.daily.precipitation_probability_max = data.daily.precipitation_probability_max_best_match;
     }
 
+    // Generate Rule-Based Regional Alerts (IMD / WMO style)
+    data.alerts = generateRegionalAlerts(data);
+
     return data;
   } catch (error) {
     console.error("Error fetching weather data:", error);
     return null;
   }
+}
+
+/**
+ * Generates synthetic regional weather alerts based on IMD/WMO standard thresholds
+ * for the next 24 hours.
+ */
+function generateRegionalAlerts(data) {
+  const alerts = [];
+  if (!data?.hourly?.time) return alerts;
+
+  const now = new Date();
+  const curHourIdx = data.hourly.time.findIndex(t => {
+    const hDate = new Date(t);
+    return hDate.getTime() >= now.getTime() - 3600000;
+  });
+
+  if (curHourIdx === -1) return alerts;
+
+  // Scan next 24 hours for extremes
+  const scanLimit = Math.min(curHourIdx + 24, data.hourly.time.length);
+  
+  let maxTemp = -99;
+  let maxPrecip = 0;
+  let maxWind = 0;
+
+  for (let i = curHourIdx; i < scanLimit; i++) {
+    if (data.hourly.temperature_2m[i] > maxTemp) maxTemp = data.hourly.temperature_2m[i];
+    if (data.hourly.precipitation[i] > maxPrecip) maxPrecip = data.hourly.precipitation[i];
+    if (data.hourly.wind_speed_10m[i] > maxWind) maxWind = data.hourly.wind_speed_10m[i];
+  }
+
+  // 1. Heat Alerts
+  if (maxTemp >= 42) {
+    alerts.push({ type: 'HEAT', level: 'RED', title: 'Severe Heatwave Alert', message: `Extreme temperatures up to ${maxTemp.toFixed(1)}°C expected. Avoid outdoor exposure.`, color: '#EF4444', bg: 'rgba(239, 68, 68, 0.15)' });
+  } else if (maxTemp >= 38) {
+    alerts.push({ type: 'HEAT', level: 'ORANGE', title: 'Heatwave Warning', message: `High temperatures up to ${maxTemp.toFixed(1)}°C expected. Stay hydrated.`, color: '#F97316', bg: 'rgba(249, 115, 22, 0.15)' });
+  }
+
+  // 2. Rain Alerts
+  if (maxPrecip >= 35) {
+    alerts.push({ type: 'RAIN', level: 'RED', title: 'Extreme Rainfall Alert', message: `Destructive downpours up to ${maxPrecip.toFixed(1)} mm/h expected. High risk of flash floods.`, color: '#EF4444', bg: 'rgba(239, 68, 68, 0.15)' });
+  } else if (maxPrecip >= 15) {
+    alerts.push({ type: 'RAIN', level: 'ORANGE', title: 'Heavy Rainfall Warning', message: `Intense rain up to ${maxPrecip.toFixed(1)} mm/h expected. Localized flooding possible.`, color: '#F97316', bg: 'rgba(249, 115, 22, 0.15)' });
+  } else if (maxPrecip >= 5) {
+    alerts.push({ type: 'RAIN', level: 'YELLOW', title: 'Moderate Rain Watch', message: `Continuous rain expected (${maxPrecip.toFixed(1)} mm/h peak). Expect waterlogging.`, color: '#EAB308', bg: 'rgba(234, 179, 8, 0.15)' });
+  }
+
+  // 3. Wind Alerts
+  if (maxWind >= 80) {
+    alerts.push({ type: 'WIND', level: 'RED', title: 'Destructive Wind Alert', message: `Gale-force winds up to ${maxWind.toFixed(1)} km/h. Danger to infrastructure.`, color: '#EF4444', bg: 'rgba(239, 68, 68, 0.15)' });
+  } else if (maxWind >= 50) {
+    alerts.push({ type: 'WIND', level: 'ORANGE', title: 'Strong Wind Warning', message: `Strong winds up to ${maxWind.toFixed(1)} km/h expected. Secure loose objects.`, color: '#F97316', bg: 'rgba(249, 115, 22, 0.15)' });
+  }
+
+  // Pick the highest priority alert if multiple exist (Red > Orange > Yellow)
+  // For now, we return all of them so the UI can display them as a list/banner
+  return alerts;
 }
 
 /**
