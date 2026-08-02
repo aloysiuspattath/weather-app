@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Activity, CloudRain, Thermometer } from 'lucide-react';
+import { Activity, CloudRain, Thermometer, Cpu } from 'lucide-react';
 
 export default function ModelComparison({ multiModel }) {
   const [metric, setMetric] = useState('temp'); // 'temp' or 'precip'
@@ -17,16 +17,16 @@ export default function ModelComparison({ multiModel }) {
   const endIndex = Math.min(startIndex + 24, multiModel.hourly.time.length);
   
   const models = [
-    { id: 'ecmwf', label: 'ECMWF', color: '#3B82F6', abbr: 'EC' },
-    { id: 'gfs', label: 'GFS', color: '#EF4444', abbr: 'GFS' },
-    { id: 'jma', label: 'JMA', color: '#10B981', abbr: 'JMA' },
-    { id: 'icon', label: 'ICON', color: '#F59E0B', abbr: 'ICN' }
+    { id: 'ecmwf', label: 'ECMWF HRES', origin: 'European 9km', color: '#3B82F6', abbr: 'ECMWF' },
+    { id: 'gfs', label: 'GFS (NOAA)', origin: 'US NCEP 13km', color: '#EF4444', abbr: 'GFS' },
+    { id: 'icon', label: 'ICON (DWD)', origin: 'German 13km', color: '#F59E0B', abbr: 'ICON' },
+    { id: 'jma', label: 'JMA', origin: 'Japan 20km', color: '#10B981', abbr: 'JMA' }
   ];
 
   // Helper to safely slice and map data
   const getSlice = (modelId, metricKey) => {
-    const dataArray = multiModel.hourly[metricKey][modelId];
-    if (!dataArray || dataArray.length === 0) return Array(endIndex - startIndex).fill(0);
+    const dataArray = multiModel.hourly?.[metricKey]?.[modelId];
+    if (!dataArray || dataArray.length === 0) return Array(endIndex - startIndex).fill(null);
     return dataArray.slice(startIndex, endIndex);
   };
 
@@ -35,37 +35,44 @@ export default function ModelComparison({ multiModel }) {
     return d.getHours() % 12 || 12; // 12-hour format
   });
 
-  // Filter out models that have no valid data in this slice
-  const validModels = models.map(m => ({
-    ...m,
-    values: getSlice(m.id, metric)
-  })).filter(m => m.values.some(v => v !== null && v !== undefined));
+  // Filter out models that have data
+  const validModels = models.map(m => {
+    const tempSlice = getSlice(m.id, 'temp');
+    const precipSlice = getSlice(m.id, 'precip');
+    const currentTemp = tempSlice[0] !== null && tempSlice[0] !== undefined ? Math.round(tempSlice[0] * 10) / 10 : null;
+    const currentPrecip = precipSlice[0] !== null && precipSlice[0] !== undefined ? Math.round(precipSlice[0] * 10) / 10 : null;
+    return {
+      ...m,
+      values: metric === 'temp' ? tempSlice : precipSlice,
+      currentTemp,
+      currentPrecip
+    };
+  }).filter(m => m.values.some(v => v !== null && v !== undefined));
 
-  // Find min and max for scaling
+  // Find min and max for scaling line chart
   const allValues = validModels.flatMap(m => m.values).filter(v => v !== null && v !== undefined);
   let min = allValues.length > 0 ? Math.min(...allValues) : 0;
   let max = allValues.length > 0 ? Math.max(...allValues) : 1;
 
   if (metric === 'precip') {
     min = 0;
-    max = Math.max(max, 1); // at least 1mm for scaling
+    max = Math.max(max, 1);
   } else {
-    // Add some padding to temp bounds
     min = Math.floor(min) - 1;
     max = Math.ceil(max) + 1;
   }
   
-  if(min === max) max = min + 1;
+  if (min === max) max = min + 1;
 
   // SVG Chart dimensions
   const width = 800;
-  const height = 140;
+  const height = 130;
   const paddingX = 30;
-  const paddingY = 20;
+  const paddingY = 16;
   
-  const scaleX = (index) => paddingX + (index * ((width - paddingX * 2) / (timeLabels.length - 1)));
+  const scaleX = (index) => paddingX + (index * ((width - paddingX * 2) / Math.max(timeLabels.length - 1, 1)));
   const scaleY = (val) => {
-    if (val === null || val === undefined) return height - paddingY; // fallback
+    if (val === null || val === undefined) return height - paddingY;
     return height - paddingY - (((val - min) / (max - min)) * (height - paddingY * 2));
   };
 
@@ -87,10 +94,11 @@ export default function ModelComparison({ multiModel }) {
 
   return (
     <div className="widget-panel" style={{ gridColumn: 'span 12' }}>
+      {/* Header */}
       <div className="widget-header" style={{ marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Activity size={16} className="text-tertiary" />
-          <h2 className="widget-title">MULTI-MODEL CONSENSUS (24H METRICS)</h2>
+          <Cpu size={16} style={{ color: 'var(--accent)' }} />
+          <h2 className="widget-title">SIDE-BY-SIDE 4-MODEL ENSEMBLE CONSENSUS</h2>
         </div>
         
         {/* Toggle Temp/Precip */}
@@ -112,46 +120,74 @@ export default function ModelComparison({ multiModel }) {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap' }}>
-        {/* Confidence Gauge */}
+      {/* Side-by-Side 4-Model Cards Grid */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+        gap: '10px',
+        marginBottom: '16px'
+      }}>
+        {models.map((m) => {
+          const validM = validModels.find(vm => vm.id === m.id);
+          const tempVal = validM?.currentTemp !== null && validM?.currentTemp !== undefined ? `${validM.currentTemp}°C` : '--';
+          const precipVal = validM?.currentPrecip !== null && validM?.currentPrecip !== undefined ? `${validM.currentPrecip} mm` : '--';
+
+          return (
+            <div key={m.id} style={{
+              background: 'rgba(0, 0, 0, 0.3)',
+              borderRadius: '10px',
+              border: `1px solid ${m.color}33`,
+              padding: '12px',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <div style={{
+                position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: m.color
+              }} />
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span className="font-data" style={{ fontSize: '11px', fontWeight: 700, color: m.color }}>{m.label}</span>
+                <span className="font-data text-tertiary" style={{ fontSize: '9px' }}>{m.origin}</span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <div>
+                  <div className="text-tertiary font-data" style={{ fontSize: '9px', textTransform: 'uppercase' }}>Current Temp</div>
+                  <div className="font-data" style={{ fontSize: '18px', fontWeight: 600, color: '#F8FAFC' }}>{tempVal}</div>
+                </div>
+
+                <div style={{ textAlign: 'right' }}>
+                  <div className="text-tertiary font-data" style={{ fontSize: '9px', textTransform: 'uppercase' }}>Precip Rate</div>
+                  <div className="font-data" style={{ fontSize: '13px', fontWeight: 500, color: '#60A5FA' }}>{precipVal}</div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Model Consensus Bar & Legend */}
+      <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap' }}>
         <div style={{ 
-          width: '120px', textAlign: 'center', padding: '8px 12px', 
-          background: 'rgba(0,0,0,0.25)', borderRadius: '12px',
-          border: '1px solid rgba(255,255,255,0.06)',
-          flexShrink: 0
+          display: 'flex', alignItems: 'center', gap: '10px',
+          background: 'rgba(0,0,0,0.25)', padding: '6px 14px', borderRadius: '10px',
+          border: '1px solid rgba(255,255,255,0.06)'
         }}>
-          <div className="text-tertiary font-data" style={{ fontSize: '10px', marginBottom: '4px', letterSpacing: '0.08em' }}>AGREEMENT</div>
-          <div className="font-data" style={{ 
-            fontSize: '22px', 
-            fontWeight: 600,
-            fontVariantNumeric: 'tabular-nums',
+          <span className="text-tertiary font-data" style={{ fontSize: '10px', letterSpacing: '0.08em' }}>MODEL AGREEMENT CONSENSUS:</span>
+          <span className="font-data" style={{ 
+            fontSize: '14px', 
+            fontWeight: 700,
             color: confidence > 80 ? '#10B981' : confidence > 50 ? '#F59E0B' : '#EF4444' 
           }}>
             {currentVals.length > 0 ? `${Math.round(confidence)}%` : '--'}
-          </div>
-        </div>
-
-        {/* Legend */}
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-          {validModels.map(m => (
-            <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255, 255, 255, 0.03)', padding: '5px 10px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
-              <div style={{ width: '8px', height: '8px', background: m.color, borderRadius: '50%', boxShadow: `0 0 8px ${m.color}` }}></div>
-              <span className="font-data" style={{ fontSize: '11px', color: 'var(--text-primary)', fontWeight: 500 }}>{m.label}</span>
-            </div>
-          ))}
-          {validModels.length < models.length && (
-            <span className="text-tertiary font-data" style={{ fontSize: '10px', marginLeft: 'auto', alignSelf: 'center' }}>
-              *(Some models unavailable)
-            </span>
-          )}
+          </span>
         </div>
       </div>
 
-      {/* Line Chart */}
+      {/* 24-Hour Trend Overlay Line Chart */}
       <div style={{ width: '100%', overflowX: 'auto', overflowY: 'hidden' }}>
-        <div style={{ minWidth: '320px', height: `${height + 25}px`, position: 'relative' }}>
+        <div style={{ minWidth: '320px', height: `${height + 20}px`, position: 'relative' }}>
           <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
-            
             {/* Grid Lines */}
             <line x1={0} y1={scaleY(min)} x2={width} y2={scaleY(min)} stroke="rgba(255,255,255,0.05)" strokeDasharray="4 4" />
             <line x1={0} y1={scaleY((min+max)/2)} x2={width} y2={scaleY((min+max)/2)} stroke="rgba(255,255,255,0.05)" strokeDasharray="4 4" />
@@ -160,7 +196,7 @@ export default function ModelComparison({ multiModel }) {
             {/* Model Lines */}
             {validModels.map((m) => {
               const points = m.values.map((v, i) => {
-                if (v === null || v === undefined) return ''; // Skip nulls
+                if (v === null || v === undefined) return '';
                 return `${scaleX(i)},${scaleY(v)}`;
               }).filter(p => p !== '').join(' ');
               
@@ -172,15 +208,14 @@ export default function ModelComparison({ multiModel }) {
                   <polyline 
                     fill="none" 
                     stroke={m.color} 
-                    strokeWidth="2"
+                    strokeWidth="2.5"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    opacity="0.8"
+                    opacity="0.85"
                     points={points} 
                   />
-                  {/* Current point dot */}
                   {firstValidVal !== null && (
-                    <circle cx={scaleX(firstValidIdx)} cy={scaleY(firstValidVal)} r="3" fill={m.color} />
+                    <circle cx={scaleX(firstValidIdx)} cy={scaleY(firstValidVal)} r="3.5" fill={m.color} />
                   )}
                 </g>
               );
@@ -188,10 +223,10 @@ export default function ModelComparison({ multiModel }) {
           </svg>
 
           {/* Time Labels */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px', padding: `0 ${paddingX}px` }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2px', padding: `0 ${paddingX}px` }}>
             {timeLabels.map((t, i) => (
               <div key={i} className="font-data text-tertiary" style={{ fontSize: '9px', textAlign: 'center', width: '20px', transform: 'translateX(-10px)' }}>
-                {i % 3 === 0 ? t : ''}
+                {i % 3 === 0 ? `${t}:00` : ''}
               </div>
             ))}
           </div>
