@@ -841,6 +841,8 @@ h1, h2, h3, h4, h5, h6 {
   padding: var(--sp-2) 0 var(--sp-3);
   animation: fadeSlideUp 0.5s var(--ease-out-expo) both;
   gap: var(--sp-2);
+  position: relative;
+  z-index: 500;
 }
 
 .nav-brand-container {

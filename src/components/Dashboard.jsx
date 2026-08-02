@@ -217,16 +217,14 @@ export default function Dashboard() {
                   top: 'calc(100% + 8px)', 
                   left: 0, 
                   width: 'max(100%, 280px)', 
-                  zIndex: 2000, 
+                  zIndex: 99999, 
                   padding: '6px', 
                   maxHeight: '260px', 
                   overflowY: 'auto',
-                  background: 'rgba(8, 12, 22, 0.96)',
-                  backdropFilter: 'blur(20px)',
-                  WebkitBackdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(255, 255, 255, 0.18)',
+                  background: '#090D16',
+                  border: '1px solid rgba(255, 255, 255, 0.22)',
                   borderRadius: '12px',
-                  boxShadow: '0 16px 40px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(59, 130, 246, 0.15)'
+                  boxShadow: '0 20px 50px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(59, 130, 246, 0.3)'
                 }}>
                   {searchResults.map((res, i) => (
                     <div 
