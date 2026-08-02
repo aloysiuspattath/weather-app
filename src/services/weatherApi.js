@@ -68,18 +68,19 @@ export async function getWeatherData(lat, lon) {
     // Ensemble & Local Timezone Calibration: Sync current temperature to local hour index
     if (data.current && data.hourly && data.hourly.time?.length) {
       const now = new Date();
-      const currentLocalHour = now.getHours();
-      const currentLocalDate = now.getDate();
+      const currentHourNum = now.getHours();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const todayStr = `${year}-${month}-${day}`;
 
-      // Find exact index matching local hour & date
+      // Bulletproof string-matching for local hour (e.g. 18 for 6:00 PM) without Date timezone shifts
       let nowIdx = data.hourly.time.findIndex(t => {
-        const d = new Date(t);
-        return d.getHours() === currentLocalHour && d.getDate() === currentLocalDate;
+        return t.startsWith(todayStr) && parseInt(t.slice(11, 13), 10) === currentHourNum;
       });
 
       if (nowIdx === -1) {
-        const nowMs = now.getTime();
-        nowIdx = data.hourly.time.findIndex(t => new Date(t).getTime() >= nowMs - 1800000);
+        nowIdx = data.hourly.time.findIndex(t => parseInt(t.slice(11, 13), 10) === currentHourNum);
       }
       if (nowIdx === -1) nowIdx = 0;
 

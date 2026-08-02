@@ -6,10 +6,18 @@ export default function HourlyForecast({ hourlyData }) {
   if (!hourlyData) return null;
 
   const now = new Date();
-  const currentHour = now.getHours();
+  const currentHourNum = now.getHours();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const todayStr = `${year}-${month}-${day}`;
 
-  // Find the index of the current hour, then take next 12 hours
-  const startIdx = Math.max(0, hourlyData.time.findIndex(t => new Date(t).getHours() === currentHour));
+  // Find index of current local hour (e.g. 18 for 6:00 PM) without Date timezone shifts
+  let startIdx = hourlyData.time.findIndex(t => t.startsWith(todayStr) && parseInt(t.slice(11, 13), 10) === currentHourNum);
+  if (startIdx === -1) {
+    startIdx = hourlyData.time.findIndex(t => parseInt(t.slice(11, 13), 10) === currentHourNum);
+  }
+  if (startIdx === -1) startIdx = 0;
   
   const hours = hourlyData.time.slice(startIdx, startIdx + 12).map((time, index) => {
     const idx = startIdx + index;
