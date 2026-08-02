@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, MapPin, CloudSun, RefreshCw, Navigation, Globe } from 'lucide-react';
+import { Search, MapPin, Navigation, RefreshCw, Radio, Layers, Cpu, Newspaper } from 'lucide-react';
 import { getWeatherData, getAirQualityData, searchLocations, detectUserLocation, getWeatherDescription } from '../services/weatherApi';
-import { LANGUAGES, getTranslation } from '../services/i18n';
+import { getTranslation } from '../services/i18n';
 import CurrentWeather from './CurrentWeather';
 import WeatherDetails from './WeatherDetails';
 import HourlyForecast from './HourlyForecast';
@@ -11,10 +11,10 @@ import AnimatedBackground from './AnimatedBackground';
 import NewsHub from './NewsHub';
 import SunMoonTracker from './SunMoonTracker';
 import AirQualityPanel from './AirQualityPanel';
-import HomeNewsFeed from './HomeNewsFeed';
 import WillItRainWidget from './WillItRainWidget';
 import ModelComparison from './ModelComparison';
 import WeatherWarningsWidget from './WeatherWarningsWidget';
+
 const DEFAULT_LOCATION = { 
   name: "Kochi, Kerala", 
   city: "Kochi",
@@ -50,7 +50,7 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [lastUpdated, setLastUpdated] = useState(null);
-  const [lang, setLang] = useState('en');
+  const [lang] = useState('en');
 
   useMouseGlow();
 
@@ -101,29 +101,20 @@ export default function Dashboard() {
 
     document.title = pageTitle;
 
-    const updateMetaTag = (selector, attribute, value) => {
-      let element = document.querySelector(selector);
-      if (!element) {
-        element = document.createElement('meta');
-        const match = selector.match(/\[(.*?)="(.*?)"\]/);
-        if (match) {
-          element.setAttribute(match[1], match[2]);
-        }
-        document.head.appendChild(element);
-      }
-      element.setAttribute(attribute, value);
-    };
+    let metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', pageDesc);
 
-    updateMetaTag('meta[name="description"]', 'content', pageDesc);
-    updateMetaTag('meta[name="title"]', 'content', pageTitle);
-    updateMetaTag('meta[property="og:title"]', 'content', pageTitle);
-    updateMetaTag('meta[property="og:description"]', 'content', pageDesc);
-    updateMetaTag('meta[name="twitter:title"]', 'content', pageTitle);
-    updateMetaTag('meta[name="twitter:description"]', 'content', pageDesc);
+    let ogTitle = document.querySelector('meta[property="og:title"]');
+    if (ogTitle) ogTitle.setAttribute('content', pageTitle);
+
+    let ogDesc = document.querySelector('meta[property="og:description"]');
+    if (ogDesc) ogDesc.setAttribute('content', pageDesc);
   }, [weatherData, location]);
 
   useEffect(() => {
-    fetchData(location.lat, location.lon);
+    if (location.lat && location.lon) {
+      fetchData(location.lat, location.lon);
+    }
   }, [location, fetchData]);
 
   const handleSearch = async (e) => {
@@ -160,8 +151,10 @@ export default function Dashboard() {
   }
 
   const navItems = [
-    { id: 'Home', label: 'Dashboard' },
-    { id: 'News', label: 'News' },
+    { id: 'Home', label: 'OVERVIEW', icon: Radio },
+    { id: 'Radar', label: 'LIVE RADAR', icon: Layers },
+    { id: 'Models', label: 'MODELS', icon: Cpu },
+    { id: 'News', label: 'NEWS HUB', icon: Newspaper },
   ];
 
   return (
@@ -171,35 +164,39 @@ export default function Dashboard() {
         isDay={weatherData?.current?.is_day} 
       />
       <div className="app-wrapper">
-        {/* ── Navigation ── */}
+        {/* ── Navigation Header ── */}
         <nav className="top-nav">
-          <div className="nav-brand-container">
-            <div className="nav-brand" onClick={() => setCurrentTab('Home')}>
+          <div className="nav-brand-container" style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            <div className="nav-brand" onClick={() => setCurrentTab('Home')} style={{ cursor: 'pointer' }}>
               <img src="/logo.svg" alt="NexusWX Logo" style={{ width: '28px', height: '28px', borderRadius: '6px', filter: 'drop-shadow(0 0 8px rgba(59, 130, 246, 0.5))' }} />
               <span className="nav-brand-text">NexusWX</span>
             </div>
 
-            <div className="nav-links">
-              {navItems.map(item => (
-                <a key={item.id}
-                  className={currentTab === item.id ? 'active' : ''}
-                  onClick={() => setCurrentTab(item.id)}
-                >{item.label}</a>
-              ))}
-            </div>
-
-            {/* Mobile Tab Pill Toggle */}
-            <div className="tab-bar mobile-only-tabs" style={{ display: 'none' }}>
-              {navItems.map(item => (
-                <button
-                  key={item.id}
-                  className={`tab-btn ${currentTab === item.id ? 'active' : ''}`}
-                  onClick={() => setCurrentTab(item.id)}
-                  style={{ fontSize: '10px', padding: '3px 10px' }}
-                >
-                  {item.label}
-                </button>
-              ))}
+            {/* Desktop Navigation Tabs */}
+            <div className="nav-links" style={{ display: 'flex', gap: '16px' }}>
+              {navItems.map(item => {
+                const Icon = item.icon;
+                const isActive = currentTab === item.id;
+                return (
+                  <a key={item.id}
+                    className={isActive ? 'active' : ''}
+                    onClick={() => setCurrentTab(item.id)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      fontSize: '11px',
+                      fontFamily: 'var(--font-data)',
+                      fontWeight: isActive ? 600 : 400,
+                      letterSpacing: '0.08em',
+                      color: isActive ? '#60A5FA' : 'var(--text-secondary)'
+                    }}
+                  >
+                    <Icon size={13} style={{ color: isActive ? '#60A5FA' : 'var(--text-tertiary)' }} />
+                    {item.label}
+                  </a>
+                );
+              })}
             </div>
           </div>
 
@@ -275,6 +272,48 @@ export default function Dashboard() {
           </div>
         </nav>
 
+        {/* Mobile Tab Pills Bar */}
+        <div style={{
+          display: 'flex',
+          overflowX: 'auto',
+          gap: '8px',
+          padding: '8px 16px',
+          background: 'rgba(9, 13, 22, 0.85)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)'
+        }} className="mobile-only-tabs-bar">
+          {navItems.map(item => {
+            const Icon = item.icon;
+            const isActive = currentTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setCurrentTab(item.id)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 14px',
+                  borderRadius: '20px',
+                  fontSize: '10.5px',
+                  fontFamily: 'var(--font-data)',
+                  fontWeight: isActive ? 600 : 400,
+                  letterSpacing: '0.06em',
+                  background: isActive ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255, 255, 255, 0.03)',
+                  color: isActive ? '#60A5FA' : 'var(--text-secondary)',
+                  border: isActive ? '1px solid rgba(59, 130, 246, 0.4)' : '1px solid rgba(255, 255, 255, 0.06)',
+                  whiteSpace: 'nowrap',
+                  cursor: 'pointer'
+                }}
+              >
+                <Icon size={12} />
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
+
         {/* ── Updated timestamp ── */}
         {lastUpdated && currentTab === 'Home' && (
           <div style={{ 
@@ -286,8 +325,9 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* ── World Monitor Grid Content ── */}
-        {currentTab === 'Home' ? (
+        {/* ── Tab Views ── */}
+        {currentTab === 'Home' && (
+          /* Streamlined & Breathable Main Dashboard */
           <main className="monitor-grid">
             {/* Meteorological Advisories & Hazard Warnings Banner */}
             <WeatherWarningsWidget 
@@ -334,7 +374,7 @@ export default function Dashboard() {
               />
             </div>
 
-            {/* Row 3: RadarMap (span 7, height 100%), DailyForecast (span 5) */}
+            {/* Row 3: RadarMap (span 7), DailyForecast (span 5) */}
             <div className="grid-r3-c1 animate-in delay-4">
               <RadarMap 
                 lat={location.lat} 
@@ -349,23 +389,36 @@ export default function Dashboard() {
               />
             </div>
 
-            {/* Row 4: WillItRainWidget (span 12) */}
+            {/* Row 4: Smart Rain Predictor Widget (span 12) */}
             <div className="grid-r4-c1 animate-in delay-5">
               <WillItRainWidget hourlyData={weatherData?.hourly} />
             </div>
-
-            {/* Row 5: Model Comparison (span 12) */}
-            <div className="grid-r4-c1 animate-in delay-5">
-              <ModelComparison multiModel={weatherData?.multiModel} />
-            </div>
-
-            {/* Row 6: HomeNewsFeed (span 12) */}
-            <div className="grid-r4-c1 animate-in delay-5">
-              <HomeNewsFeed location={location} />
-            </div>
           </main>
-        ) : (
-          <NewsHub location={location} />
+        )}
+
+        {/* Live Radar Tab View */}
+        {currentTab === 'Radar' && (
+          <div className="animate-in" style={{ width: '100%', height: 'calc(100vh - 160px)', minHeight: '550px' }}>
+            <RadarMap 
+              lat={location.lat} 
+              lon={location.lon} 
+              locationName={location.name} 
+            />
+          </div>
+        )}
+
+        {/* Model Consensus Tab View */}
+        {currentTab === 'Models' && (
+          <div className="animate-in" style={{ width: '100%' }}>
+            <ModelComparison multiModel={weatherData?.multiModel} />
+          </div>
+        )}
+
+        {/* News Hub Tab View */}
+        {currentTab === 'News' && (
+          <div className="animate-in" style={{ width: '100%' }}>
+            <NewsHub location={location} />
+          </div>
         )}
       </div>
     </>
