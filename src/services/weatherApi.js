@@ -65,6 +65,46 @@ export async function getWeatherData(lat, lon) {
       }
     };
 
+    // Ensemble Calibration: Calibrate current temperature & ground rain code
+    if (data.current && data.hourly) {
+      // Find current hour index
+      const nowMs = new Date().getTime();
+      let nowIdx = data.hourly.time.findIndex(t => new Date(t).getTime() >= nowMs - 1800000);
+      if (nowIdx === -1) nowIdx = 0;
+
+      // Extract current hour temperatures across models (ECMWF, GFS, JMA, ICON)
+      const ecmwfTemp = data.hourly.temperature_2m_ecmwf_ifs04?.[nowIdx];
+      const gfsTemp = data.hourly.temperature_2m_gfs_seamless?.[nowIdx];
+      const jmaTemp = data.hourly.temperature_2m_jma_seamless?.[nowIdx];
+      const iconTemp = data.hourly.temperature_2m_icon_seamless?.[nowIdx];
+      const validTemps = [ecmwfTemp, gfsTemp, jmaTemp, iconTemp].filter(t => t !== null && t !== undefined && !isNaN(t));
+
+      if (validTemps.length > 0) {
+        const ensembleMean = validTemps.reduce((a, b) => a + b, 0) / validTemps.length;
+        // If raw best_match temperature is > 1.8°C lower/higher than multi-model consensus, calibrate to ensemble mean
+        if (Math.abs(data.current.temperature_2m - ensembleMean) > 1.8) {
+          data.current.temperature_2m = Math.round(ensembleMean * 10) / 10;
+        }
+      }
+
+      // Ground Rain Calibration: If total ground precipitation < 0.35 mm/h, normalize WMO rain/shower codes (51-81) to actual cloud cover code
+      const precip = Number(data.current.precipitation || 0);
+      const rain = Number(data.current.rain || 0);
+      const showers = Number(data.current.showers || 0);
+      const totalPrecip = Math.max(precip, rain + showers);
+
+      if (totalPrecip < 0.35 && (data.current.weather_code >= 51 && data.current.weather_code <= 81)) {
+        const clouds = data.current.cloud_cover || 0;
+        if (clouds >= 75) {
+          data.current.weather_code = 3; // Overcast
+        } else if (clouds >= 35) {
+          data.current.weather_code = 2; // Partly Cloudy
+        } else {
+          data.current.weather_code = 1; // Mainly Clear
+        }
+      }
+    }
+
     // To prevent breaking existing components, map the best_match to the standard fields
     if (data.hourly) {
       data.hourly.temperature_2m = data.hourly.temperature_2m_best_match;
