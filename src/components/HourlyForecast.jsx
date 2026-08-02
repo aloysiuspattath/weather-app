@@ -65,9 +65,9 @@ export default function HourlyForecast({ hourlyData }) {
               {/* Rain Chance Pill */}
               <div style={{ 
                 marginTop: '4px', 
-                fontSize: '9px', 
+                fontSize: '10.5px', 
                 fontFamily: 'var(--font-data)', 
-                color: hour.rainProb > 40 ? '#60A5FA' : 'rgba(255, 255, 255, 0.4)',
+                color: hour.rainProb > 40 ? '#60A5FA' : 'var(--text-tertiary)',
                 fontWeight: hour.rainProb > 40 ? 600 : 400,
                 display: 'flex',
                 alignItems: 'center',

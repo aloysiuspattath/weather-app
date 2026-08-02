@@ -129,8 +129,8 @@ export default function SunMoonTracker({ dailyData }) {
           }}>
             <Sunrise size={15} style={{ color: '#F59E0B', flexShrink: 0 }} />
             <div style={{ minWidth: 0, overflow: 'hidden' }}>
-              <div className="text-tertiary font-data" style={{ fontSize: '8.5px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Sunrise</div>
-              <div className="font-data" style={{ fontSize: '11px', fontWeight: 600, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{sunriseTime}</div>
+              <div className="text-tertiary font-data" style={{ fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Sunrise</div>
+              <div className="font-data" style={{ fontSize: '12px', fontWeight: 600, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{sunriseTime}</div>
             </div>
           </div>
 
@@ -142,13 +142,13 @@ export default function SunMoonTracker({ dailyData }) {
           }}>
             <Sunset size={15} style={{ color: '#EF4444', flexShrink: 0 }} />
             <div style={{ minWidth: 0, overflow: 'hidden' }}>
-              <div className="text-tertiary font-data" style={{ fontSize: '8.5px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Sunset</div>
-              <div className="font-data" style={{ fontSize: '11px', fontWeight: 600, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{sunsetTime}</div>
+              <div className="text-tertiary font-data" style={{ fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Sunset</div>
+              <div className="font-data" style={{ fontSize: '12px', fontWeight: 600, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{sunsetTime}</div>
             </div>
           </div>
         </div>
 
-        <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '9.5px', color: 'var(--text-tertiary)', fontFamily: 'var(--font-data)' }}>
+        <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: 'var(--text-tertiary)', fontFamily: 'var(--font-data)' }}>
           <span style={{ letterSpacing: '0.06em' }}>{isNight ? 'NIGHT ELEVATION' : 'DAYLIGHT ELEVATION'}</span>
           <span style={{ color: markerColor, fontWeight: 600, letterSpacing: '0.05em' }}>{sunProgress}% COMPLETE</span>
         </div>

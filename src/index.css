@@ -16,9 +16,9 @@
   --glass-shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
   --glass-blur: blur(24px) saturate(150%);
 
-  --text-primary: rgba(245, 245, 250, 1);
-  --text-secondary: rgba(140, 150, 170, 0.7);
-  --text-tertiary: rgba(100, 110, 130, 0.5);
+  --text-primary: rgba(248, 250, 252, 1);
+  --text-secondary: rgba(194, 207, 224, 0.88);
+  --text-tertiary: rgba(148, 163, 184, 0.78);
 
   --accent: #3B82F6;
   --accent-warm: #F59E0B;
