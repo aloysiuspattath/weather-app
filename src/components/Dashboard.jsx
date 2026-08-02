@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Search, MapPin, Navigation, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Search, MapPin, Navigation, RefreshCw, Radio } from 'lucide-react';
 import { getWeatherData, getAirQualityData, searchLocations, detectUserLocation, getWeatherDescription } from '../services/weatherApi';
 import { getTranslation } from '../services/i18n';
 import CurrentWeather from './CurrentWeather';
@@ -25,6 +25,8 @@ const DEFAULT_LOCATION = {
   lon: 76.2673 
 };
 
+const AUTO_SYNC_INTERVAL_MS = 60000; // 60 seconds background live auto-sync
+
 // Mouse-tracking glow effect for all widget panels
 function useMouseGlow() {
   useEffect(() => {
@@ -48,10 +50,13 @@ export default function Dashboard() {
   const [weatherData, setWeatherData] = useState(null);
   const [airQualityData, setAirQualityData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [lang] = useState('en');
+
+  const lastSyncTimeRef = useRef(Date.now());
 
   useMouseGlow();
 
@@ -74,17 +79,60 @@ export default function Dashboard() {
     }
   };
 
-  const fetchData = useCallback(async (lat, lon) => {
-    setLoading(true);
-    const [weather, aq] = await Promise.all([
-      getWeatherData(lat, lon),
-      getAirQualityData(lat, lon)
-    ]);
-    setWeatherData(weather);
-    setAirQualityData(aq);
-    setLoading(false);
-    setLastUpdated(new Date());
+  // Background Auto-Sync Telemetry Fetcher
+  const fetchData = useCallback(async (lat, lon, isBackground = false) => {
+    if (!isBackground) setLoading(true);
+    setIsSyncing(true);
+    try {
+      const [weather, aq] = await Promise.all([
+        getWeatherData(lat, lon),
+        getAirQualityData(lat, lon)
+      ]);
+      setWeatherData(weather);
+      setAirQualityData(aq);
+      const now = new Date();
+      setLastUpdated(now);
+      lastSyncTimeRef.current = now.getTime();
+    } catch (err) {
+      console.warn("Background auto-sync failed:", err);
+    } finally {
+      setLoading(false);
+      setTimeout(() => setIsSyncing(false), 800);
+    }
   }, []);
+
+  // Initial Fetch & Location Sync
+  useEffect(() => {
+    if (location.lat && location.lon) {
+      fetchData(location.lat, location.lon, false);
+    }
+  }, [location, fetchData]);
+
+  // 60-Second Real-Time Live Auto-Refresh & Background Interval Sync Engine
+  useEffect(() => {
+    if (!location.lat || !location.lon) return;
+
+    const syncInterval = setInterval(() => {
+      fetchData(location.lat, location.lon, true);
+    }, AUTO_SYNC_INTERVAL_MS);
+
+    // Auto-sync when tab regains focus / user wakes browser window
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        const timeSinceLastSync = Date.now() - lastSyncTimeRef.current;
+        if (timeSinceLastSync > 30000) { // Sync if last sync was > 30s ago
+          fetchData(location.lat, location.lon, true);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(syncInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [location.lat, location.lon, fetchData]);
 
   // Dynamically update document title, meta description, and social OpenGraph tags per location/weather
   useEffect(() => {
@@ -111,12 +159,6 @@ export default function Dashboard() {
     let ogDesc = document.querySelector('meta[property="og:description"]');
     if (ogDesc) ogDesc.setAttribute('content', pageDesc);
   }, [weatherData, location]);
-
-  useEffect(() => {
-    if (location.lat && location.lon) {
-      fetchData(location.lat, location.lon);
-    }
-  }, [location, fetchData]);
 
   const handleSearch = async (e) => {
     const value = e.target.value;
@@ -247,20 +289,44 @@ export default function Dashboard() {
             <button className="icon-btn" onClick={handleLocateMe} title="Auto-detect Location">
               <Navigation size={14} style={{ color: 'var(--accent)' }} />
             </button>
-            <div className="icon-btn" onClick={() => fetchData(location.lat, location.lon)} title="Refresh">
-              <RefreshCw size={14} />
+            <div 
+              className="icon-btn" 
+              onClick={() => fetchData(location.lat, location.lon, false)} 
+              title="Manual Sync Telemetry"
+              style={{ position: 'relative' }}
+            >
+              <RefreshCw size={14} style={{ animation: isSyncing ? 'spin 1s linear infinite' : 'none', color: isSyncing ? '#60A5FA' : 'inherit' }} />
             </div>
           </div>
         </nav>
 
-        {/* ── Updated timestamp ── */}
+        {/* ── Real-Time Live Sync Status Bar ── */}
         {lastUpdated && currentTab === 'Home' && (
           <div style={{ 
-            textAlign: 'right', marginBottom: '8px',
-            fontFamily: 'var(--font-data)', fontSize: '10px',
-            letterSpacing: '0.05em', color: 'var(--text-tertiary)'
+            display: 'flex',
+            justify: 'space-between',
+            alignItems: 'center',
+            marginBottom: '8px',
+            fontFamily: 'var(--font-data)', 
+            fontSize: '10px',
+            letterSpacing: '0.05em', 
+            color: 'var(--text-tertiary)'
           }}>
-            LAST SYNC {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{
+                width: '6px', height: '6px', borderRadius: '50%',
+                background: isSyncing ? '#60A5FA' : '#10B981',
+                boxShadow: isSyncing ? '0 0 8px #60A5FA' : '0 0 8px #10B981',
+                animation: 'pulse-glow 1.5s infinite'
+              }} />
+              <span style={{ color: isSyncing ? '#60A5FA' : 'var(--text-secondary)', fontWeight: 500 }}>
+                {isSyncing ? 'SYNCING LIVE TELEMETRY...' : 'LIVE AUTO-SYNC ACTIVE (60s)'}
+              </span>
+            </div>
+
+            <div>
+              LAST SYNC {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </div>
           </div>
         )}
 
