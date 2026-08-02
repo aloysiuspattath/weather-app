@@ -335,7 +335,8 @@ export default function CurrentWeather({ weatherData, locationName, lat, lon }) 
         padding: '10px 14px',
         border: '1px solid rgba(255, 255, 255, 0.08)',
         display: 'flex',
-        justify: 'space-between',
+        justifyContent: 'center',
+        gap: '16px',
         alignItems: 'center'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
