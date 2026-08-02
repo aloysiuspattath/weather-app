@@ -100,14 +100,22 @@ export default function WillItRainWidget({ hourlyData }) {
     gaugeFillColor = '#F59E0B';
   }
 
-  // Smart Advisory message logic
+  // Smart Advisory message logic taking into account precipitation rate (mm)
   let advisoryMessage = '';
   if (prob > 50) {
-    advisoryMessage = `${prob}% Chance of Rain — High probability of downpour around ${selectedTimeFormatted}. Carry an umbrella!`;
+    if (precip > 0.5) {
+      advisoryMessage = `${prob}% Chance of Rain (${precip.toFixed(1)} mm expected) — High probability of active downpour around ${selectedTimeFormatted}. Carry an umbrella!`;
+    } else {
+      advisoryMessage = `${prob}% Chance of Rain around ${selectedTimeFormatted} — Heavy rain clouds overhead. Rain expected shortly within this hour!`;
+    }
   } else if (prob >= 20) {
-    advisoryMessage = `${prob}% Chance of Rain — Moderate chance of rainfall around ${selectedTimeFormatted}. Consider carrying a light jacket or umbrella!`;
+    if (precip > 0) {
+      advisoryMessage = `${prob}% Chance of Rain (${precip.toFixed(1)} mm expected) — Moderate chance of passing showers around ${selectedTimeFormatted}.`;
+    } else {
+      advisoryMessage = `${prob}% Chance of Rain around ${selectedTimeFormatted} — Passing clouds overhead. Low chance of localized drizzle.`;
+    }
   } else {
-    advisoryMessage = `${prob}% Chance of Rain — Clear skies and dry weather expected around ${selectedTimeFormatted}. Enjoy your day!`;
+    advisoryMessage = `${prob}% Chance of Rain — Dry weather and stable conditions expected around ${selectedTimeFormatted}. Enjoy your day!`;
   }
 
   return (
