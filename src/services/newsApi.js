@@ -11,14 +11,61 @@ const EXCLUDED_DOMAINS = [
   'weather-us.com'
 ];
 
+// Diverse, high-resolution contextual weather & news featured photos
+const CONTEXTUAL_IMAGES = {
+  flood: [
+    'https://images.unsplash.com/photo-1547683905-f686c993aae5?w=800&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?w=800&auto=format&fit=crop'
+  ],
+  rain: [
+    'https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?w=800&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1519692933481-e162a57d6721?w=800&auto=format&fit=crop'
+  ],
+  thunderstorm: [
+    'https://images.unsplash.com/photo-1605727216801-e27ce1d0cc28?w=800&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1509803874385-db7c23652552?w=800&auto=format&fit=crop'
+  ],
+  kerala: [
+    'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=800&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1593693397690-362cb9666fc2?w=800&auto=format&fit=crop'
+  ],
+  general: [
+    'https://images.unsplash.com/photo-1499346030926-9a72daac6c63?w=800&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1504386106331-3e4e71712b38?w=800&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1501630834273-4b5604d2ee31?w=800&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1516912481808-3406841bd33c?w=800&auto=format&fit=crop'
+  ]
+};
+
 function isExcludedUrl(url) {
   if (!url) return false;
   const lower = url.toLowerCase();
   return EXCLUDED_DOMAINS.some(domain => lower.includes(domain));
 }
 
+// Select a contextual high-res featured photo based on headline topic & article index
+function getContextualFeaturedImage(title = '', index = 0) {
+  const t = title.toLowerCase();
+  let pool = CONTEXTUAL_IMAGES.general;
+
+  if (t.includes('flood') || t.includes('landslide') || t.includes('waterlog')) {
+    pool = CONTEXTUAL_IMAGES.flood;
+  } else if (t.includes('rain') || t.includes('monsoon') || t.includes('shower') || t.includes('downpour')) {
+    pool = CONTEXTUAL_IMAGES.rain;
+  } else if (t.includes('thunder') || t.includes('lightning') || t.includes('storm') || t.includes('alert')) {
+    pool = CONTEXTUAL_IMAGES.thunderstorm;
+  } else if (t.includes('kerala') || t.includes('thrissur') || t.includes('ernakulam') || t.includes('idukki')) {
+    pool = CONTEXTUAL_IMAGES.kerala;
+  }
+
+  // Pick unique image from pool based on index and title length hash
+  const hash = title.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const selectedIdx = (hash + index) % pool.length;
+  return pool[selectedIdx];
+}
+
 // Extract real og:image or img src from RSS description HTML if enclosure is missing
-function extractRealImageUrl(item) {
+function extractRealImageUrl(item, index = 0) {
   if (item.enclosure?.link && item.enclosure.link.startsWith('http')) {
     return item.enclosure.link;
   }
@@ -30,7 +77,9 @@ function extractRealImageUrl(item) {
   if (match && match[1] && !match[1].includes('google.com/favicon') && !match[1].includes('clear.gif')) {
     return match[1];
   }
-  return null; // Return null so UI renders stylized news text placeholder instead of repeated stock image
+  
+  // Return a unique topic-matched featured photo if RSS doesn't supply one
+  return getContextualFeaturedImage(item.title, index);
 }
 
 async function fetchRssQuery(query) {
@@ -44,13 +93,13 @@ async function fetchRssQuery(query) {
     
     if (data.status === 'ok' && data.items && data.items.length > 0) {
       const filtered = data.items.filter(item => !isExcludedUrl(item.link));
-      return filtered.map(item => {
+      return filtered.map((item, idx) => {
         const sourceName = typeof item.source === 'string' ? item.source : (item.source?.name || 'Google News');
         return {
           title: item.title,
           description: (item.description || '').replace(/<[^>]+>/g, '').slice(0, 150) + '...',
           url: item.link,
-          image: extractRealImageUrl(item),
+          image: extractRealImageUrl(item, idx),
           publishedAt: item.pubDate,
           source: { name: sourceName }
         };
