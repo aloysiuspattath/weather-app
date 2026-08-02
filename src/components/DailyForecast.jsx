@@ -18,31 +18,40 @@ export default function DailyForecast({ dailyData }) {
     const min = Math.round(dailyData.temperature_2m_min[index]);
     const barLeft  = ((min - globalMin) / range) * 100;
     const barWidth = ((max - min) / range) * 100;
+    const code = dailyData.weather_code[index];
+    const isRainDay = (code >= 51 && code <= 67) || (code >= 80 && code <= 82) || (code >= 95);
 
     return {
       day: date.toLocaleDateString([], { weekday: 'short' }).toUpperCase(),
       max, min, barLeft, barWidth,
-      code: dailyData.weather_code[index]
+      code, isRainDay
     };
   });
 
+  const rainDaysCount = days.filter(d => d.isRainDay).length;
+
   return (
-    <div className="widget-panel" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div className="widget-header">
-        <div className="widget-title">
+    <div className="widget-panel animate-in delay-4" style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between' }}>
+      {/* Header */}
+      <div className="widget-header" style={{ marginBottom: '8px' }}>
+        <div className="widget-title" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <LucideIcons.Calendar size={14} className="text-tertiary" />
-          7-DAY FORECAST
+          <span>7-DAY FORECAST</span>
         </div>
+        <span className="font-data" style={{ fontSize: '10px', color: 'var(--text-tertiary)' }}>
+          {globalMin}°C — {globalMax}°C
+        </span>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, justifyContent: 'flex-start' }}>
+      {/* Rows evenly distributed to fill card 100% */}
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between', padding: '4px 0' }}>
         {days.map((d, i) => {
           const wInfo = getWeatherDescription(d.code);
           const IconComp = LucideIcons[wInfo.icon] || LucideIcons.Cloud;
 
           return (
-            <div key={i} className="daily-row">
-              <span className="daily-day">
+            <div key={i} className="daily-row" style={{ padding: '8px 4px' }}>
+              <span className="daily-day" style={{ fontSize: '11px', fontWeight: 600 }}>
                 {i === 0 ? 'TODAY' : d.day}
               </span>
               <IconComp size={18} strokeWidth={1.8}
@@ -58,6 +67,25 @@ export default function DailyForecast({ dailyData }) {
             </div>
           );
         })}
+      </div>
+
+      {/* Bottom Telemetry Summary Bar */}
+      <div style={{
+        marginTop: '8px',
+        paddingTop: '8px',
+        borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+        display: 'flex',
+        alignItems: 'center',
+        justify: 'space-between',
+        fontSize: '10px',
+        fontFamily: 'var(--font-data)',
+        color: 'var(--text-tertiary)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <LucideIcons.CloudRain size={12} style={{ color: '#60A5FA' }} />
+          <span>RAIN FORECAST: {rainDaysCount} OF 7 DAYS</span>
+        </div>
+        <span style={{ color: '#FBBF24', fontWeight: 600 }}>MAX: {globalMax}°C</span>
       </div>
     </div>
   );
