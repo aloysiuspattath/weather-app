@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, MapPin, CloudSun, RefreshCw, Navigation } from 'lucide-react';
+import { Search, MapPin, CloudSun, RefreshCw, Navigation, Globe } from 'lucide-react';
 import { getWeatherData, getAirQualityData, searchLocations, detectUserLocation, getWeatherDescription } from '../services/weatherApi';
+import { LANGUAGES, getTranslation } from '../services/i18n';
 import CurrentWeather from './CurrentWeather';
 import WeatherDetails from './WeatherDetails';
 import HourlyForecast from './HourlyForecast';
@@ -41,16 +42,17 @@ function useMouseGlow() {
 }
 
 export default function Dashboard() {
-  useMouseGlow();
-
   const [currentTab, setCurrentTab] = useState('Home');
   const [location, setLocation] = useState(DEFAULT_LOCATION);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
   const [weatherData, setWeatherData] = useState(null);
   const [airQualityData, setAirQualityData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [lang, setLang] = useState('en');
+
+  useMouseGlow();
 
   // Auto detect accurate user location on initial app load
   useEffect(() => {
@@ -207,7 +209,7 @@ export default function Dashboard() {
               <input 
                 type="text" 
                 className="nav-search" 
-                placeholder="Search location..." 
+                placeholder={getTranslation(lang, 'searchPlaceholder')} 
                 value={searchQuery}
                 onChange={handleSearch}
               />
@@ -263,9 +265,44 @@ export default function Dashboard() {
                 </div>
               )}
             </div>
-            <div className="icon-btn" onClick={handleLocateMe} title="Detect My Location">
-              <Navigation size={14} style={{ color: 'var(--accent)' }} />
+
+            {/* Language Selector Pill Bar */}
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '3px', 
+              background: 'rgba(255, 255, 255, 0.04)', 
+              border: '1px solid rgba(255, 255, 255, 0.08)', 
+              borderRadius: 'var(--radius-inner)', 
+              padding: '2px 4px' 
+            }}>
+              <Globe size={12} style={{ color: 'var(--text-tertiary)', marginLeft: '3px', marginRight: '1px' }} />
+              {LANGUAGES.map(l => (
+                <button
+                  key={l.code}
+                  onClick={() => setLang(l.code)}
+                  style={{
+                    background: lang === l.code ? 'rgba(59, 130, 246, 0.3)' : 'transparent',
+                    border: lang === l.code ? '1px solid var(--accent)' : '1px solid transparent',
+                    color: lang === l.code ? '#ffffff' : 'var(--text-tertiary)',
+                    borderRadius: '4px',
+                    padding: '2px 6px',
+                    fontSize: '10px',
+                    fontFamily: 'var(--font-data)',
+                    cursor: 'pointer',
+                    fontWeight: lang === l.code ? 600 : 400,
+                    transition: 'all 0.15s ease'
+                  }}
+                  title={l.label}
+                >
+                  {l.short}
+                </button>
+              ))}
             </div>
+
+            <button className="icon-btn" onClick={handleLocateMe} title="Auto-detect Location">
+              <Navigation size={14} style={{ color: 'var(--accent)' }} />
+            </button>
             <div className="icon-btn" onClick={() => fetchData(location.lat, location.lon)} title="Refresh">
               <RefreshCw size={14} />
             </div>

@@ -246,18 +246,17 @@ export default function CurrentWeather({ weatherData, locationName, lat, lon }) 
             {temp}<span style={{ fontSize: '32px', color: 'rgba(255,255,255,0.7)', marginLeft: '2px', fontWeight: 300 }}>°C</span>
           </div>
           
-          {/* Condition Title Badge */}
+          {/* Condition Title Badge (Clean Flat Glass) */}
           <div style={{ 
             display: 'inline-flex',
             alignItems: 'center',
             gap: '6px',
-            background: 'rgba(255, 255, 255, 0.08)',
+            background: 'rgba(255, 255, 255, 0.06)',
             backdropFilter: 'blur(12px)',
-            border: `1px solid ${iconColor}44`,
+            border: '1px solid rgba(255, 255, 255, 0.12)',
             padding: '4px 12px',
             borderRadius: '20px',
-            marginBottom: '10px',
-            boxShadow: `0 4px 14px ${accentGlow}`
+            marginBottom: '10px'
           }}>
             <span style={{ fontSize: '15px', fontWeight: '600', color: '#ffffff', letterSpacing: '-0.01em' }}>
               {description}
