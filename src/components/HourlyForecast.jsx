@@ -14,10 +14,19 @@ export default function HourlyForecast({ hourlyData }) {
   const hours = hourlyData.time.slice(startIdx, startIdx + 12).map((time, index) => {
     const idx = startIdx + index;
     const rainProb = hourlyData?.precipitation_probability?.[idx] !== undefined ? hourlyData.precipitation_probability[idx] : 0;
+    const precipAmount = hourlyData?.precipitation?.[idx] !== undefined ? hourlyData.precipitation[idx] : 0;
+    let code = hourlyData.weather_code[idx];
+
+    // If precipitation is 0.0 mm (or < 0.35 mm) and WMO code is a rain shower code (51-81), normalize to Cloud/Overcast!
+    if (precipAmount < 0.35 && (code >= 51 && code <= 81)) {
+      code = rainProb > 60 ? 3 : 2;
+    }
+
     return {
       time: new Date(time).toLocaleTimeString([], { hour: 'numeric', hour12: true }),
       temp: Math.round(hourlyData.temperature_2m[idx]),
-      code: hourlyData.weather_code[idx],
+      code,
+      precipAmount,
       rainProb,
       isNow: index === 0
     };
@@ -34,14 +43,14 @@ export default function HourlyForecast({ hourlyData }) {
           <span>HOURLY FORECAST (NEXT 12H)</span>
         </div>
         <span className="font-data" style={{ fontSize: '10px', color: maxRainProb >= 50 ? '#60A5FA' : 'var(--text-tertiary)' }}>
-          PEAK RAIN: {maxRainProb}%
+          PEAK RAIN CHANCE: {maxRainProb}%
         </span>
       </div>
       
       {/* Hourly Scroll Row */}
       <div style={{
         display: 'flex', 
-        justifyContent: 'space-between', 
+        justify: 'space-between', 
         overflowX: 'auto',
         gap: '6px', 
         padding: '6px 0',
@@ -67,14 +76,14 @@ export default function HourlyForecast({ hourlyData }) {
                 marginTop: '4px', 
                 fontSize: '10.5px', 
                 fontFamily: 'var(--font-data)', 
-                color: hour.rainProb > 40 ? '#60A5FA' : 'var(--text-tertiary)',
-                fontWeight: hour.rainProb > 40 ? 600 : 400,
+                color: hour.rainProb > 40 && hour.precipAmount > 0.2 ? '#60A5FA' : 'var(--text-tertiary)',
+                fontWeight: hour.rainProb > 40 && hour.precipAmount > 0.2 ? 600 : 400,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '2px'
               }}>
-                <LucideIcons.Droplets size={8} style={{ color: hour.rainProb > 40 ? '#60A5FA' : 'rgba(255, 255, 255, 0.3)' }} />
+                <LucideIcons.Droplets size={8} style={{ color: hour.rainProb > 40 && hour.precipAmount > 0.2 ? '#60A5FA' : 'rgba(255, 255, 255, 0.3)' }} />
                 <span>{hour.rainProb}%</span>
               </div>
             </div>
@@ -89,7 +98,7 @@ export default function HourlyForecast({ hourlyData }) {
         borderTop: '1px solid rgba(255, 255, 255, 0.06)',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        justify: 'space-between',
         flexWrap: 'wrap',
         gap: '8px',
         fontSize: '10px',
@@ -100,7 +109,10 @@ export default function HourlyForecast({ hourlyData }) {
           <LucideIcons.TrendingUp size={12} style={{ color: 'var(--accent)', flexShrink: 0 }} />
           <span>TREND: {hours[0]?.temp}°C ➔ {hours[hours.length - 1]?.temp}°C</span>
         </div>
-        <span style={{ color: 'rgba(255,255,255,0.6)', marginLeft: 'auto' }}>CONSENSUS TELEMETRY</span>
+
+        <div style={{ opacity: 0.8, letterSpacing: '0.04em' }}>
+          CONSENSUS TELEMETRY OK
+        </div>
       </div>
     </div>
   );

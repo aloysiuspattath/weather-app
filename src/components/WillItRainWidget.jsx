@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Umbrella, CloudRain, Clock, Sparkles, Droplets } from 'lucide-react';
+import { Umbrella, CloudRain, Clock, Sparkles, Droplets, Sun, Cloud } from 'lucide-react';
 
 export default function WillItRainWidget({ hourlyData }) {
   const [selectedHourIndex, setSelectedHourIndex] = useState(() => {
@@ -79,21 +79,25 @@ export default function WillItRainWidget({ hourlyData }) {
     ? new Date(selectedTimeStr).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })
     : 'Selected Hour';
 
+  // Strict ground rain check: Requires precip >= 0.35 mm/h AND prob >= 45% for active rain risk
+  const isDownpourRisk = prob >= 45 && precip >= 0.35;
+  const isPassingShowerRisk = (prob >= 35 || precip > 0.1) && precip < 0.35;
+
   // Calculate status badge, color bar theme, and advisory
-  let statusBadgeText = 'CLEAR SKIES';
-  let badgeColor = 'var(--accent-green)';
+  let statusBadgeText = 'CLEAR / NO RAIN';
+  let badgeColor = '#10B981';
   let badgeBg = 'rgba(16, 185, 129, 0.15)';
   let badgeBorder = 'rgba(16, 185, 129, 0.3)';
-  let gaugeFillColor = 'var(--accent-green)';
+  let gaugeFillColor = '#10B981';
 
-  if (prob > 50) {
-    statusBadgeText = 'HIGH RAIN RISK';
+  if (isDownpourRisk) {
+    statusBadgeText = 'ACTIVE DOWNPOUR RISK';
     badgeColor = '#EF4444';
     badgeBg = 'rgba(239, 68, 68, 0.18)';
     badgeBorder = 'rgba(239, 68, 68, 0.4)';
     gaugeFillColor = 'linear-gradient(90deg, #3B82F6 0%, #EF4444 100%)';
-  } else if (prob >= 20) {
-    statusBadgeText = 'MODERATE CHANCE';
+  } else if (isPassingShowerRisk) {
+    statusBadgeText = 'LIGHT DRIZZLE / OVERCAST';
     badgeColor = '#F59E0B';
     badgeBg = 'rgba(245, 158, 11, 0.18)';
     badgeBorder = 'rgba(245, 158, 11, 0.4)';
@@ -102,222 +106,183 @@ export default function WillItRainWidget({ hourlyData }) {
 
   // Smart Advisory message logic taking into account precipitation rate (mm)
   let advisoryMessage = '';
-  if (prob > 50) {
-    if (precip > 0.5) {
-      advisoryMessage = `${prob}% Chance of Rain (${precip.toFixed(1)} mm expected) — High probability of active downpour around ${selectedTimeFormatted}. Carry an umbrella!`;
+  if (isDownpourRisk) {
+    advisoryMessage = `${prob}% Rain Probability (${precip.toFixed(1)} mm/h expected) — Active downpour expected around ${selectedTimeFormatted}. Carry an umbrella!`;
+  } else if (isPassingShowerRisk) {
+    if (precip > 0.1) {
+      advisoryMessage = `${prob}% Rain Probability (${precip.toFixed(1)} mm/h expected) — Passing drizzle around ${selectedTimeFormatted}.`;
     } else {
-      advisoryMessage = `${prob}% Chance of Rain around ${selectedTimeFormatted} — Heavy rain clouds overhead. Rain expected shortly within this hour!`;
-    }
-  } else if (prob >= 20) {
-    if (precip > 0) {
-      advisoryMessage = `${prob}% Chance of Rain (${precip.toFixed(1)} mm expected) — Moderate chance of passing showers around ${selectedTimeFormatted}.`;
-    } else {
-      advisoryMessage = `${prob}% Chance of Rain around ${selectedTimeFormatted} — Passing clouds overhead. Low chance of localized drizzle.`;
+      advisoryMessage = `${prob}% Rain Cloud Probability (0.0 mm rainfall expected) — Overcast skies around ${selectedTimeFormatted}, but ground rainfall is 0.0 mm. No umbrella needed.`;
     }
   } else {
-    advisoryMessage = `${prob}% Chance of Rain — Dry weather and stable conditions expected around ${selectedTimeFormatted}. Enjoy your day!`;
+    advisoryMessage = `${prob}% Rain Probability (0.0 mm rainfall expected) — Dry weather and clear/overcast conditions around ${selectedTimeFormatted}. Enjoy your day!`;
   }
 
   return (
-    <div className="widget-panel" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      {/* Widget Header */}
-      <div className="widget-header" style={{ marginBottom: 0 }}>
+    <div className="widget-panel animate-in delay-4" style={{ position: 'relative', overflow: 'hidden' }}>
+      {/* Header */}
+      <div className="widget-header" style={{ marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Umbrella size={18} style={{ color: 'var(--accent)' }} />
-          <span className="widget-title">SMART RAIN PREDICTOR</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Clock size={12} className="text-tertiary" />
-          <span className="font-data" style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>
-            HOURLY RISK
-          </span>
-        </div>
-      </div>
-
-      {/* Main Gauge & Status Badge Row */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '1rem',
-        background: 'rgba(255, 255, 255, 0.02)',
-        border: '1px solid rgba(255, 255, 255, 0.05)',
-        borderRadius: 'var(--radius-inner)',
-        padding: '1rem'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{
-            width: '48px',
-            height: '48px',
-            borderRadius: '50%',
-            background: prob > 50 ? 'rgba(239, 68, 68, 0.15)' : prob >= 20 ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-            border: `1px solid ${badgeBorder}`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-            boxShadow: `0 0 16px ${prob > 50 ? 'rgba(239, 68, 68, 0.2)' : prob >= 20 ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)'}`
-          }}>
-            <CloudRain size={24} style={{ color: badgeColor }} />
-          </div>
-
-          <div>
-            <div className="font-data text-tertiary" style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              RAIN PROBABILITY
-            </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-              <span className="font-data" style={{ fontSize: '32px', fontWeight: '600', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
-                {prob}%
-              </span>
-              <span className="font-data text-tertiary" style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '3px', fontVariantNumeric: 'tabular-nums' }}>
-                <Droplets size={12} style={{ color: '#60A5FA' }} />
-                {precip > 0 ? `${precip.toFixed(1)} mm` : '0 mm'}
-              </span>
-            </div>
-          </div>
+          <Umbrella size={16} style={{ color: '#60A5FA' }} />
+          <h2 className="widget-title">SMART RAIN PREDICTOR</h2>
         </div>
 
-        <div style={{
+        {/* Dynamic Status Badge */}
+        <div style={{ 
           background: badgeBg,
           border: `1px solid ${badgeBorder}`,
           color: badgeColor,
-          padding: '6px 14px',
-          borderRadius: 'var(--radius-pill)',
+          padding: '4px 12px',
+          borderRadius: '20px',
           fontSize: '11px',
-          fontWeight: '600',
+          fontFamily: 'var(--font-data)',
+          fontWeight: 700,
           letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-          boxShadow: `0 0 14px ${badgeBg}`
+          boxShadow: `0 0 12px ${badgeColor}33`
         }}>
           {statusBadgeText}
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', fontFamily: 'var(--font-data)' }} className="text-tertiary">
-          <span style={{ letterSpacing: '0.05em' }}>0% DRY</span>
-          <span style={{ letterSpacing: '0.05em' }}>50% MODERATE</span>
-          <span style={{ letterSpacing: '0.05em' }}>100% HEAVY</span>
-        </div>
-        <div style={{
-          height: '8px',
-          width: '100%',
-          borderRadius: '4px',
-          background: 'rgba(255, 255, 255, 0.06)',
-          position: 'relative',
-          overflow: 'hidden'
-        }}>
-          <div style={{
-            height: '100%',
-            width: `${Math.min(Math.max(prob, 0), 100)}%`,
-            background: gaugeFillColor,
-            borderRadius: '4px',
-            transition: 'width 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-            boxShadow: `0 0 12px ${prob > 50 ? 'rgba(239, 68, 68, 0.5)' : prob >= 20 ? 'rgba(245, 158, 11, 0.5)' : 'rgba(16, 185, 129, 0.5)'}`
-          }} />
-        </div>
-      </div>
-
-      <div style={{
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: '10px',
-        background: 'rgba(59, 130, 246, 0.06)',
-        border: '1px solid rgba(59, 130, 246, 0.18)',
-        borderRadius: 'var(--radius-inner)',
-        padding: '12px 14px'
+      {/* Main Gauge & Metrics Grid */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
+        gap: '20px',
+        alignItems: 'center',
+        marginBottom: '20px'
       }}>
-        <Sparkles size={16} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: '2px' }} />
-        <div style={{ fontSize: '12px', color: 'var(--text-primary)', lineHeight: '1.45' }}>
-          <strong style={{ color: badgeColor }}>Smart Advisory: </strong>
-          {advisoryMessage}
+        {/* Left: Gauge & Percentages */}
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
+            <span className="text-secondary font-data" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              RAIN CLOUD PROBABILITY ({selectedTimeFormatted})
+            </span>
+            <span className="font-data" style={{ fontSize: '28px', fontWeight: 700, color: '#ffffff' }}>
+              {prob}<span style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>%</span>
+            </span>
+          </div>
+
+          {/* Color Progress Bar Gauge */}
+          <div style={{ 
+            width: '100%', 
+            height: '10px', 
+            background: 'rgba(255, 255, 255, 0.08)', 
+            borderRadius: '6px', 
+            overflow: 'hidden',
+            marginBottom: '8px',
+            position: 'relative'
+          }}>
+            <div style={{ 
+              width: `${Math.max(prob, 4)}%`, 
+              height: '100%', 
+              background: gaugeFillColor,
+              borderRadius: '6px',
+              transition: 'width 0.4s ease-out'
+            }} />
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--text-tertiary)', fontFamily: 'var(--font-data)' }}>
+            <span>0% CLEAR</span>
+            <span>50% MODERATE</span>
+            <span>100% HEAVY</span>
+          </div>
+        </div>
+
+        {/* Right: Rainfall Rate Readout */}
+        <div style={{ 
+          background: 'rgba(0, 0, 0, 0.3)', 
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: '12px',
+          padding: '14px 18px',
+          display: 'flex',
+          justify: 'space-between',
+          alignItems: 'center'
+        }}>
+          <div>
+            <div className="text-tertiary font-data" style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>
+              EXPECTED PRECIPITATION RATE
+            </div>
+            <div className="font-data" style={{ fontSize: '22px', fontWeight: 700, color: precip > 0.35 ? '#60A5FA' : 'var(--text-primary)' }}>
+              {precip.toFixed(1)} <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 400 }}>mm/h</span>
+            </div>
+          </div>
+
+          <div style={{ 
+            width: '42px', height: '42px', borderRadius: '50%', 
+            background: precip > 0.35 ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+            border: precip > 0.35 ? '1px solid rgba(59, 130, 246, 0.4)' : '1px solid rgba(255, 255, 255, 0.08)',
+            display: 'flex', alignItems: 'center', justify: 'center'
+          }}>
+            {precip > 0.35 ? <CloudRain size={20} style={{ color: '#60A5FA' }} /> : <Cloud size={20} style={{ color: 'var(--text-tertiary)' }} />}
+          </div>
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span className="widget-title" style={{ fontSize: '10px' }}>SELECT HOUR TELEMETRY</span>
-          <span className="font-data text-tertiary" style={{ fontSize: '11px', fontVariantNumeric: 'tabular-nums' }}>
-            {selectedTimeFormatted}
-          </span>
+      {/* Advisory Alert Banner */}
+      <div style={{
+        background: 'rgba(59, 130, 246, 0.08)',
+        border: '1px solid rgba(59, 130, 246, 0.2)',
+        borderRadius: '10px',
+        padding: '12px 14px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '10px',
+        marginBottom: '20px'
+      }}>
+        <Sparkles size={16} style={{ color: '#60A5FA', flexShrink: 0 }} />
+        <span style={{ fontSize: '12px', color: '#E2E8F0', fontFamily: 'var(--font-main)' }}>
+          {advisoryMessage}
+        </span>
+      </div>
+
+      {/* 24-Hour Selector Scroll Row */}
+      <div>
+        <div className="text-tertiary font-data" style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
+          SELECT HOUR TO INSPECT PRECIPITATION TELEMETRY
         </div>
 
         <div style={{
           display: 'flex',
           gap: '6px',
           overflowX: 'auto',
-          paddingBottom: '6px',
+          paddingBottom: '4px',
           scrollbarWidth: 'thin'
         }}>
-          {hoursList.length > 0 ? (
-            hoursList.map((h) => {
-              const isSelected = h.globalIdx === selectedHourIndex;
-              return (
-                <button
-                  key={h.globalIdx}
-                  onClick={() => setSelectedHourIndex(h.globalIdx)}
-                  style={{
-                    background: isSelected ? 'rgba(59, 130, 246, 0.25)' : 'rgba(255, 255, 255, 0.03)',
-                    border: isSelected ? '1px solid var(--accent)' : '1px solid rgba(255, 255, 255, 0.06)',
-                    color: isSelected ? '#ffffff' : 'var(--text-secondary)',
-                    borderRadius: 'var(--radius-inner)',
-                    padding: '6px 10px',
-                    fontSize: '11px',
-                    fontFamily: 'var(--font-data)',
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '2px',
-                    transition: 'all 0.2s ease',
-                    minWidth: '56px',
-                    boxShadow: isSelected ? '0 0 10px rgba(59, 130, 246, 0.2)' : 'none'
-                  }}
-                >
-                  <span style={{ fontSize: '10px', color: h.isNow ? 'var(--accent)' : 'inherit', fontWeight: h.isNow ? '600' : 'normal' }}>
-                    {h.isNow ? 'NOW' : h.timeLabel}
-                  </span>
-                  <span style={{
-                    fontSize: '9px',
-                    fontVariantNumeric: 'tabular-nums',
-                    color: h.prob > 50 ? '#EF4444' : h.prob >= 20 ? '#F59E0B' : 'var(--text-tertiary)'
-                  }}>
-                    {h.prob}%
-                  </span>
-                </button>
-              );
-            })
-          ) : (
-            Array.from({ length: 24 }).map((_, i) => {
-              const hLabel = i === 0 ? '12 AM' : i < 12 ? `${i} AM` : i === 12 ? '12 PM' : `${i - 12} PM`;
-              const isSelected = i === selectedHourIndex;
-              return (
-                <button
-                  key={i}
-                  onClick={() => setSelectedHourIndex(i)}
-                  style={{
-                    background: isSelected ? 'rgba(59, 130, 246, 0.25)' : 'rgba(255, 255, 255, 0.03)',
-                    border: isSelected ? '1px solid var(--accent)' : '1px solid rgba(255, 255, 255, 0.06)',
-                    color: isSelected ? '#ffffff' : 'var(--text-secondary)',
-                    borderRadius: 'var(--radius-inner)',
-                    padding: '6px 10px',
-                    fontSize: '11px',
-                    fontFamily: 'var(--font-data)',
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap',
-                    transition: 'all 0.2s ease',
-                    minWidth: '56px'
-                  }}
-                >
-                  {hLabel}
-                </button>
-              );
-            })
-          )}
-        </div>
+          {hoursList.map((item) => {
+            const isSelected = item.globalIdx === selectedHourIndex;
 
+            return (
+              <button
+                key={item.globalIdx}
+                onClick={() => setSelectedHourIndex(item.globalIdx)}
+                style={{
+                  flex: '0 0 auto',
+                  minWidth: '55px',
+                  padding: '8px 6px',
+                  borderRadius: '10px',
+                  border: isSelected ? '1px solid #60A5FA' : '1px solid rgba(255, 255, 255, 0.06)',
+                  background: isSelected ? 'rgba(59, 130, 246, 0.22)' : 'rgba(0, 0, 0, 0.25)',
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <div className="font-data" style={{ fontSize: '9px', color: isSelected ? '#ffffff' : 'var(--text-tertiary)', textTransform: 'uppercase' }}>
+                  {item.isNow ? 'NOW' : item.timeLabel}
+                </div>
+                <div className="font-data" style={{ 
+                  fontSize: '11px', 
+                  fontWeight: 600, 
+                  color: item.prob > 45 && item.precip > 0.2 ? '#60A5FA' : 'var(--text-primary)',
+                  marginTop: '2px' 
+                }}>
+                  {item.prob}%
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
