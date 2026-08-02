@@ -73,9 +73,10 @@ export default function SunMoonTracker({ dailyData }) {
             <path
               d="M 20 90 A 80 70 0 0 1 180 90"
               fill="none"
-              stroke="rgba(255, 255, 255, 0.08)"
-              strokeWidth="2.5"
-              strokeDasharray="4 4"
+              stroke="rgba(255, 255, 255, 0.12)"
+              strokeWidth="3"
+              strokeDasharray="4 6"
+              strokeLinecap="round"
             />
 
             {/* Active Progress Arc */}
@@ -83,37 +84,33 @@ export default function SunMoonTracker({ dailyData }) {
               d="M 20 90 A 80 70 0 0 1 180 90"
               fill="none"
               stroke="url(#sunArcGrad)"
-              strokeWidth="3.5"
-              strokeDasharray="250"
-              strokeDashoffset={250 - (250 * sunProgress) / 100}
-              style={{ transition: 'stroke-dashoffset 1.2s cubic-bezier(0.16, 1, 0.3, 1)' }}
+              strokeWidth="4"
+              strokeLinecap="round"
+              strokeDasharray="242"
+              strokeDashoffset={242 - (242 * sunProgress) / 100}
+              style={{ transition: 'stroke-dashoffset 1s cubic-bezier(0.16, 1, 0.3, 1)' }}
             />
 
-            {/* Animated Expanding Pulse Outer Ring */}
+            {/* Glowing Sun / Moon Core Orb */}
             <circle
               cx={sunX}
               cy={sunY}
-              r="12"
-              fill="none"
-              stroke={markerColor}
-              strokeWidth="1.5"
-              opacity="0.5"
+              r="7"
+              fill={markerColor}
               style={{
-                animation: 'sunPulse 2s ease-in-out infinite',
-                transition: 'cx 1.2s ease, cy 1.2s ease'
+                filter: `drop-shadow(0 0 8px ${markerColor}) drop-shadow(0 0 14px ${glowColor})`,
+                transition: 'cx 1s ease, cy 1s ease'
               }}
             />
-
-            {/* Core Sun / Moon Marker Orb */}
+            
+            {/* Sun Core Highlight Dot */}
             <circle
               cx={sunX}
               cy={sunY}
-              r="6.5"
-              fill={markerColor}
-              filter="url(#orb-glow)"
+              r="3"
+              fill="#FFFFFF"
               style={{
-                boxShadow: `0 0 16px ${glowColor}`,
-                transition: 'cx 1.2s ease, cy 1.2s ease'
+                transition: 'cx 1s ease, cy 1s ease'
               }}
             />
           </svg>
