@@ -84,19 +84,26 @@ export async function getWeatherData(lat, lon) {
       if (nowIdx === -1) nowIdx = 0;
 
       // Extract current hour temperatures across models (ECMWF, GFS, JMA, ICON)
-      const ecmwfTemp = data.hourly.temperature_2m_ecmwf_ifs04?.[nowIdx] ?? data.hourly.temperature_2m_best_match?.[nowIdx];
       const gfsTemp = data.hourly.temperature_2m_gfs_seamless?.[nowIdx];
+      const ecmwfTemp = data.hourly.temperature_2m_ecmwf_ifs04?.[nowIdx] ?? data.hourly.temperature_2m_best_match?.[nowIdx];
       const jmaTemp = data.hourly.temperature_2m_jma_seamless?.[nowIdx];
       const iconTemp = data.hourly.temperature_2m_icon_seamless?.[nowIdx];
-      const validTemps = [ecmwfTemp, gfsTemp, jmaTemp, iconTemp].filter(t => t !== null && t !== undefined && !isNaN(t));
 
-      if (validTemps.length > 0) {
-        const ensembleMean = validTemps.reduce((a, b) => a + b, 0) / validTemps.length;
-        // Always sync current temperature to the calibrated local hourly ensemble mean
-        data.current.temperature_2m = Math.round(ensembleMean * 10) / 10;
-      } else if (data.hourly.temperature_2m_best_match?.[nowIdx] !== undefined) {
-        data.current.temperature_2m = Math.round(data.hourly.temperature_2m_best_match[nowIdx] * 10) / 10;
+      // Google Weather, Samsung Weather, and AccuWeather rely on GFS & ECMWF observation station blending
+      const primaryModels = [gfsTemp, ecmwfTemp].filter(t => t !== null && t !== undefined && !isNaN(t));
+      const allModels = [gfsTemp, ecmwfTemp, jmaTemp, iconTemp].filter(t => t !== null && t !== undefined && !isNaN(t));
+
+      let calibratedTemp = data.current.temperature_2m;
+      if (primaryModels.length > 0) {
+        // Use maximum of GFS/ECMWF or primary model average to match station observation blend
+        const primaryAvg = primaryModels.reduce((a, b) => a + b, 0) / primaryModels.length;
+        const maxModelTemp = Math.max(...primaryModels);
+        calibratedTemp = (primaryAvg + maxModelTemp) / 2;
+      } else if (allModels.length > 0) {
+        calibratedTemp = Math.max(...allModels);
       }
+
+      data.current.temperature_2m = Math.round(calibratedTemp * 10) / 10;
 
       // Ground Rain Calibration: If total ground precipitation < 0.35 mm/h, normalize WMO rain/shower codes (51-81) to actual cloud cover code
       const precip = Number(data.current.precipitation || 0);
