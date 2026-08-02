@@ -17,6 +17,22 @@ function isExcludedUrl(url) {
   return EXCLUDED_DOMAINS.some(domain => lower.includes(domain));
 }
 
+// Extract real og:image or img src from RSS description HTML if enclosure is missing
+function extractRealImageUrl(item) {
+  if (item.enclosure?.link && item.enclosure.link.startsWith('http')) {
+    return item.enclosure.link;
+  }
+  if (item.thumbnail && item.thumbnail.startsWith('http')) {
+    return item.thumbnail;
+  }
+  const desc = item.description || '';
+  const match = desc.match(/<img[^>]+src=["'](https?:\/\/[^"']+)["']/i);
+  if (match && match[1] && !match[1].includes('google.com/favicon') && !match[1].includes('clear.gif')) {
+    return match[1];
+  }
+  return null; // Return null so UI renders stylized news text placeholder instead of repeated stock image
+}
+
 async function fetchRssQuery(query) {
   try {
     const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-IN&gl=IN&ceid=IN:en`;
@@ -28,14 +44,17 @@ async function fetchRssQuery(query) {
     
     if (data.status === 'ok' && data.items && data.items.length > 0) {
       const filtered = data.items.filter(item => !isExcludedUrl(item.link));
-      return filtered.map(item => ({
-        title: item.title,
-        description: (item.description || '').replace(/<[^>]+>/g, '').slice(0, 150) + '...',
-        url: item.link,
-        image: item.enclosure?.link || 'https://images.unsplash.com/photo-1592210454359-9043f067919b?q=80&w=800&auto=format&fit=crop',
-        publishedAt: item.pubDate,
-        source: { name: item.source || 'Google News' }
-      }));
+      return filtered.map(item => {
+        const sourceName = typeof item.source === 'string' ? item.source : (item.source?.name || 'Google News');
+        return {
+          title: item.title,
+          description: (item.description || '').replace(/<[^>]+>/g, '').slice(0, 150) + '...',
+          url: item.link,
+          image: extractRealImageUrl(item),
+          publishedAt: item.pubDate,
+          source: { name: sourceName }
+        };
+      });
     }
     return [];
   } catch (err) {
