@@ -35,7 +35,7 @@ export default function DailyForecast({ dailyData }) {
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-around' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, justifyContent: 'flex-start' }}>
         {days.map((d, i) => {
           const wInfo = getWeatherDescription(d.code);
           const IconComp = LucideIcons[wInfo.icon] || LucideIcons.Cloud;

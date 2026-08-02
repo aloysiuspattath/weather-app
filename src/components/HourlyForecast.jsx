@@ -46,7 +46,7 @@ export default function HourlyForecast({ hourlyData }) {
               <span className="hourly-time" style={{ textTransform: 'uppercase' }}>
                 {hour.isNow ? 'NOW' : hour.time}
               </span>
-              <IconComp size={22} strokeWidth={1.8} color={iconColor} style={{ margin: 'var(--sp-1) 0', filter: `drop-shadow(0 0 6px ${iconColor}66)` }} />
+              <IconComp size={20} strokeWidth={1.8} color={iconColor} style={{ margin: '4px 0', filter: `drop-shadow(0 0 6px ${iconColor}66)` }} />
               <span className="hourly-temp">{hour.temp}°</span>
             </div>
           );
