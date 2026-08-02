@@ -12,61 +12,79 @@ const AIR_QUALITY_URL = 'https://air-quality-api.open-meteo.com/v1/air-quality';
  */
 export async function getWeatherData(lat, lon) {
   try {
-    const params = new URLSearchParams({
+    // 1. Fetch Standard Data (Guarantees all UI fields exist normally without _best_match issues)
+    const standardParams = new URLSearchParams({
       latitude: lat,
       longitude: lon,
       current: 'temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m,uv_index',
       hourly: 'temperature_2m,relative_humidity_2m,precipitation_probability,precipitation,weather_code,wind_speed_10m,uv_index',
       daily: 'weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,precipitation_probability_max',
+      timezone: 'auto'
+    });
+
+    // 2. Fetch Multi-Model Data (Only fetch what we need for ModelComparison and calibration)
+    const modelParams = new URLSearchParams({
+      latitude: lat,
+      longitude: lon,
+      hourly: 'temperature_2m,precipitation',
+      daily: 'temperature_2m_max,temperature_2m_min',
       models: 'best_match,ecmwf_ifs04,gfs_seamless,jma_seamless,icon_seamless',
       timezone: 'auto'
     });
 
-    const response = await fetch(`${BASE_URL}?${params}`);
-    if (!response.ok) throw new Error('Failed to fetch weather data');
-    const data = await response.json();
+    const [stdRes, modelRes] = await Promise.all([
+      fetch(`${BASE_URL}?${standardParams}`),
+      fetch(`${BASE_URL}?${modelParams}`)
+    ]);
 
-    // The API returns fields like data.hourly.temperature_2m_ecmwf_ifs04
-    // We bundle these multi-model arrays for easy use in the UI
+    if (!stdRes.ok) throw new Error('Failed to fetch standard weather data');
+    const data = await stdRes.json();
+    
+    let modelData = null;
+    if (modelRes.ok) {
+      modelData = await modelRes.json();
+    }
+
+    // Attach multi-model data for the UI
     data.multiModel = {
       hourly: {
-        time: data.hourly?.time || [],
+        time: modelData?.hourly?.time || data.hourly?.time || [],
         temp: {
-          best: data.hourly?.temperature_2m_best_match || [],
-          ecmwf: data.hourly?.temperature_2m_ecmwf_ifs04 || [],
-          gfs: data.hourly?.temperature_2m_gfs_seamless || [],
-          jma: data.hourly?.temperature_2m_jma_seamless || [],
-          icon: data.hourly?.temperature_2m_icon_seamless || []
+          best: modelData?.hourly?.temperature_2m_best_match || [],
+          ecmwf: modelData?.hourly?.temperature_2m_ecmwf_ifs04 || [],
+          gfs: modelData?.hourly?.temperature_2m_gfs_seamless || [],
+          jma: modelData?.hourly?.temperature_2m_jma_seamless || [],
+          icon: modelData?.hourly?.temperature_2m_icon_seamless || []
         },
         precip: {
-          best: data.hourly?.precipitation_best_match || [],
-          ecmwf: data.hourly?.precipitation_ecmwf_ifs04 || [],
-          gfs: data.hourly?.precipitation_gfs_seamless || [],
-          jma: data.hourly?.precipitation_jma_seamless || [],
-          icon: data.hourly?.precipitation_icon_seamless || []
+          best: modelData?.hourly?.precipitation_best_match || [],
+          ecmwf: modelData?.hourly?.precipitation_ecmwf_ifs04 || [],
+          gfs: modelData?.hourly?.precipitation_gfs_seamless || [],
+          jma: modelData?.hourly?.precipitation_jma_seamless || [],
+          icon: modelData?.hourly?.precipitation_icon_seamless || []
         }
       },
       daily: {
-        time: data.daily?.time || [],
+        time: modelData?.daily?.time || data.daily?.time || [],
         tempMax: {
-          best: data.daily?.temperature_2m_max_best_match || [],
-          ecmwf: data.daily?.temperature_2m_max_ecmwf_ifs04 || [],
-          gfs: data.daily?.temperature_2m_max_gfs_seamless || [],
-          jma: data.daily?.temperature_2m_max_jma_seamless || [],
-          icon: data.daily?.temperature_2m_max_icon_seamless || []
+          best: modelData?.daily?.temperature_2m_max_best_match || [],
+          ecmwf: modelData?.daily?.temperature_2m_max_ecmwf_ifs04 || [],
+          gfs: modelData?.daily?.temperature_2m_max_gfs_seamless || [],
+          jma: modelData?.daily?.temperature_2m_max_jma_seamless || [],
+          icon: modelData?.daily?.temperature_2m_max_icon_seamless || []
         },
         tempMin: {
-          best: data.daily?.temperature_2m_min_best_match || [],
-          ecmwf: data.daily?.temperature_2m_min_ecmwf_ifs04 || [],
-          gfs: data.daily?.temperature_2m_min_gfs_seamless || [],
-          jma: data.daily?.temperature_2m_min_jma_seamless || [],
-          icon: data.daily?.temperature_2m_min_icon_seamless || []
+          best: modelData?.daily?.temperature_2m_min_best_match || [],
+          ecmwf: modelData?.daily?.temperature_2m_min_ecmwf_ifs04 || [],
+          gfs: modelData?.daily?.temperature_2m_min_gfs_seamless || [],
+          jma: modelData?.daily?.temperature_2m_min_jma_seamless || [],
+          icon: modelData?.daily?.temperature_2m_min_icon_seamless || []
         }
       }
     };
 
     // Ensemble & Local Timezone Calibration: Sync current temperature to local hour index
-    if (data.current && data.hourly && data.hourly.time?.length) {
+    if (modelData && data.current && data.hourly && data.hourly.time?.length) {
       const now = new Date();
       const currentHourNum = now.getHours();
       const year = now.getFullYear();
@@ -74,78 +92,30 @@ export async function getWeatherData(lat, lon) {
       const day = String(now.getDate()).padStart(2, '0');
       const todayStr = `${year}-${month}-${day}`;
 
-      // Bulletproof string-matching for local hour (e.g. 18 for 6:00 PM) without Date timezone shifts
       let nowIdx = data.hourly.time.findIndex(t => {
         return t.startsWith(todayStr) && parseInt(t.slice(11, 13), 10) === currentHourNum;
       });
 
-      if (nowIdx === -1) {
-        nowIdx = data.hourly.time.findIndex(t => parseInt(t.slice(11, 13), 10) === currentHourNum);
-      }
+      if (nowIdx === -1) nowIdx = data.hourly.time.findIndex(t => parseInt(t.slice(11, 13), 10) === currentHourNum);
       if (nowIdx === -1) nowIdx = 0;
 
-      // Extract current hour temperatures across ALL available models
-      const gfsTemp = data.hourly.temperature_2m_gfs_seamless?.[nowIdx];
-      const ecmwfTemp = data.hourly.temperature_2m_ecmwf_ifs04?.[nowIdx]; // Often null for tropical regions
-      const jmaTemp = data.hourly.temperature_2m_jma_seamless?.[nowIdx];
-      const iconTemp = data.hourly.temperature_2m_icon_seamless?.[nowIdx];
-      const bestTemp = data.hourly.temperature_2m_best_match?.[nowIdx];
+      const gfsTemp = modelData.hourly?.temperature_2m_gfs_seamless?.[nowIdx];
+      const ecmwfTemp = modelData.hourly?.temperature_2m_ecmwf_ifs04?.[nowIdx]; 
+      const jmaTemp = modelData.hourly?.temperature_2m_jma_seamless?.[nowIdx];
+      const iconTemp = modelData.hourly?.temperature_2m_icon_seamless?.[nowIdx];
 
-      // Collect all valid model temperatures (excluding nulls)
       const allModelTemps = [gfsTemp, ecmwfTemp, jmaTemp, iconTemp].filter(t => t !== null && t !== undefined && !isNaN(t));
 
       if (allModelTemps.length >= 2) {
-        // Sort descending and use 60/40 weighted blend of top 2 models
-        // Google/AccuWeather favour the highest-resolution model for tropical regions
         const sorted = [...allModelTemps].sort((a, b) => b - a);
-        const calibratedTemp = sorted[0] * 0.6 + sorted[1] * 0.4;
-        data.current.temperature_2m = Math.round(calibratedTemp * 10) / 10;
-      } else if (allModelTemps.length === 1) {
-        data.current.temperature_2m = Math.round(allModelTemps[0] * 10) / 10;
-      }
-      // If no model data, keep the raw current.temperature_2m as-is
-
-      // Ground Rain Calibration: If total ground precipitation < 0.35 mm/h, normalize WMO rain/shower codes (51-81) to actual cloud cover code
-      const precip = Number(data.current.precipitation || 0);
-      const rain = Number(data.current.rain || 0);
-      const showers = Number(data.current.showers || 0);
-      const totalPrecip = Math.max(precip, rain + showers);
-
-      if (totalPrecip < 0.35 && (data.current.weather_code >= 51 && data.current.weather_code <= 81)) {
-        const clouds = data.current.cloud_cover || 0;
-        if (clouds >= 75) {
-          data.current.weather_code = 3; // Overcast
-        } else if (clouds >= 35) {
-          data.current.weather_code = 2; // Partly Cloudy
-        } else {
-          data.current.weather_code = 1; // Mainly Clear
-        }
+        data.current.temperature_2m = Math.round((sorted[0] * 0.6 + sorted[1] * 0.4) * 10) / 10;
       }
     }
 
-    // To prevent breaking existing components, map and calibrate standard fields
-    if (data.hourly && data.hourly.time?.length) {
-      // 1. Calibrated Hourly Temperatures: median-high blend of available models
-      data.hourly.temperature_2m = data.hourly.time.map((_, i) => {
-        const gfs = data.hourly.temperature_2m_gfs_seamless?.[i];
-        const ecmwf = data.hourly.temperature_2m_ecmwf_ifs04?.[i]; // null for many tropical regions
-        const jma = data.hourly.temperature_2m_jma_seamless?.[i];
-        const icon = data.hourly.temperature_2m_icon_seamless?.[i];
-
-        const all = [gfs, ecmwf, jma, icon].filter(v => v !== null && v !== undefined && !isNaN(v));
-
-        if (all.length >= 2) {
-          // Sort descending and use 60/40 weighted blend of top 2 models (same as current temp)
-          const sorted = [...all].sort((a, b) => b - a);
-          return Math.round((sorted[0] * 0.6 + sorted[1] * 0.4) * 10) / 10;
-        }
-        if (all.length === 1) return Math.round(all[0] * 10) / 10;
-        return Math.round((data.hourly.temperature_2m_best_match?.[i] || 25) * 10) / 10;
-      });
-
-      // 2. Hourly Precipitation: use best_match but override current + past hours with actual ground truth
-      // The forecast may predict rain that never happened — current.precipitation is the real observation
-      const precipArr = [...(data.hourly.precipitation_best_match || [])];
+    // Fix ground-truth precipitation overwrites for past hours
+    if (modelData?.hourly && data.hourly && data.hourly.time?.length) {
+      // Create a copy of the best_match precipitation if it exists, otherwise use standard precipitation
+      const precipArr = [...(modelData.hourly.precipitation_best_match || data.hourly.precipitation || [])];
       if (data.current) {
         const actualPrecip = Number(data.current.precipitation || 0);
         const actualRain = Number(data.current.rain || 0);
@@ -169,21 +139,6 @@ export async function getWeatherData(lat, lon) {
         }
       }
       data.hourly.precipitation = precipArr;
-
-      data.hourly.relative_humidity_2m = data.hourly.relative_humidity_2m_best_match || data.hourly.relative_humidity_2m;
-      data.hourly.precipitation_probability = data.hourly.precipitation_probability_best_match || data.hourly.precipitation_probability;
-      data.hourly.weather_code = data.hourly.weather_code_best_match || data.hourly.weather_code;
-      data.hourly.wind_speed_10m = data.hourly.wind_speed_10m_best_match || data.hourly.wind_speed_10m;
-      data.hourly.uv_index = data.hourly.uv_index_best_match || data.hourly.uv_index;
-    }
-    if (data.daily) {
-      data.daily.weather_code = data.daily.weather_code_best_match || data.daily.weather_code;
-      data.daily.temperature_2m_max = data.daily.temperature_2m_max_best_match || data.daily.temperature_2m_max;
-      data.daily.temperature_2m_min = data.daily.temperature_2m_min_best_match || data.daily.temperature_2m_min;
-      data.daily.sunrise = data.daily.sunrise_best_match || data.daily.sunrise;
-      data.daily.sunset = data.daily.sunset_best_match || data.daily.sunset;
-      data.daily.uv_index_max = data.daily.uv_index_max_best_match || data.daily.uv_index_max;
-      data.daily.precipitation_probability_max = data.daily.precipitation_probability_max_best_match || data.daily.precipitation_probability_max;
     }
 
     // Generate Rule-Based Regional Alerts (IMD / WMO style)
