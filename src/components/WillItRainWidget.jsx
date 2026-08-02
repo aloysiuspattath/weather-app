@@ -80,7 +80,7 @@ export default function WillItRainWidget({ hourlyData }) {
 
   // Strict ground rain check: Requires precip >= 0.35 mm/h AND prob >= 45% for active rain risk
   const isDownpourRisk = prob >= 45 && precip >= 0.35;
-  const isPassingShowerRisk = prob >= 35 && precip > 0.1 && precip < 0.35;
+  const isPassingShowerRisk = prob >= 35 && precip >= 0.1 && precip < 0.35;
 
   // Calculate status badge, color bar theme, and advisory
   let statusBadgeText = 'CLEAR / NO RAIN';
@@ -109,10 +109,10 @@ export default function WillItRainWidget({ hourlyData }) {
     advisoryMessage = `${prob}% probability with ${precip.toFixed(1)} mm/h expected rainfall around ${selectedTimeFormatted}. Carry an umbrella!`;
   } else if (isPassingShowerRisk) {
     advisoryMessage = `${prob}% cloud probability with light drizzle (${precip.toFixed(1)} mm/h) possible around ${selectedTimeFormatted}.`;
-  } else if (prob > 50 && precip < 0.1) {
-    advisoryMessage = `${prob}% rain cloud probability but 0.0 mm actual rainfall expected around ${selectedTimeFormatted}. Overcast skies, no umbrella needed.`;
+  } else if (prob > 50) {
+    advisoryMessage = `High cloud cover (${prob}%) but minimal rainfall (${precip.toFixed(1)} mm/h) expected around ${selectedTimeFormatted}. Overcast skies, no umbrella needed.`;
   } else {
-    advisoryMessage = `${prob}% rain probability with 0.0 mm rainfall around ${selectedTimeFormatted}. Dry conditions expected. Enjoy your day!`;
+    advisoryMessage = `Low rain risk (${prob}%) with ${precip.toFixed(1)} mm/h rainfall around ${selectedTimeFormatted}. Dry conditions expected. Enjoy your day!`;
   }
 
   return (
