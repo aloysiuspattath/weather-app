@@ -6,12 +6,9 @@ export default function ModelComparison({ multiModel }) {
 
   if (!multiModel || !multiModel.hourly) return null;
 
-  // Extract next 24 hours of data
-  const now = new Date();
-  const currentHourString = now.toISOString().slice(0, 14) + '00';
-  
-  // Find index of current hour
-  let startIndex = multiModel.hourly.time.findIndex(t => t >= currentHourString);
+  // Find index of current hour cleanly using timestamp comparison
+  const nowMs = new Date().getTime();
+  let startIndex = multiModel.hourly.time.findIndex(t => new Date(t).getTime() >= nowMs - 1800000);
   if (startIndex === -1) startIndex = 0;
   
   const endIndex = Math.min(startIndex + 24, multiModel.hourly.time.length);
@@ -30,6 +27,18 @@ export default function ModelComparison({ multiModel }) {
     return dataArray.slice(startIndex, endIndex);
   };
 
+  const getFirstValidVal = (slice, fallbackArray) => {
+    if (slice && slice.length > 0) {
+      const val = slice.find(v => v !== null && v !== undefined && !isNaN(v));
+      if (val !== undefined && val !== null) return Math.round(val * 10) / 10;
+    }
+    if (fallbackArray && fallbackArray.length > 0) {
+      const fb = fallbackArray.slice(startIndex, endIndex).find(v => v !== null && v !== undefined && !isNaN(v));
+      if (fb !== undefined && fb !== null) return Math.round(fb * 10) / 10;
+    }
+    return null;
+  };
+
   const timeLabels = multiModel.hourly.time.slice(startIndex, endIndex).map(t => {
     const d = new Date(t);
     return d.getHours() % 12 || 12; // 12-hour format
@@ -39,15 +48,15 @@ export default function ModelComparison({ multiModel }) {
   const validModels = models.map(m => {
     const tempSlice = getSlice(m.id, 'temp');
     const precipSlice = getSlice(m.id, 'precip');
-    const currentTemp = tempSlice[0] !== null && tempSlice[0] !== undefined ? Math.round(tempSlice[0] * 10) / 10 : null;
-    const currentPrecip = precipSlice[0] !== null && precipSlice[0] !== undefined ? Math.round(precipSlice[0] * 10) / 10 : null;
+    const currentTemp = getFirstValidVal(tempSlice, multiModel.hourly?.temp?.best);
+    const currentPrecip = getFirstValidVal(precipSlice, multiModel.hourly?.precip?.best);
     return {
       ...m,
       values: metric === 'temp' ? tempSlice : precipSlice,
       currentTemp,
       currentPrecip
     };
-  }).filter(m => m.values.some(v => v !== null && v !== undefined));
+  });
 
   // Find min and max for scaling line chart
   const allValues = validModels.flatMap(m => m.values).filter(v => v !== null && v !== undefined);
