@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, ShieldCheck, Flame, Sun, CloudRain, Wind, AlertCircle } from 'lucide-react';
+import { AlertTriangle, ShieldCheck, Flame, Sun, CloudRain, Wind, AlertCircle, Waves } from 'lucide-react';
 
 export default function WeatherWarningsWidget({ current, hourlyData, dailyData }) {
   if (!current) return null;
@@ -62,7 +62,36 @@ export default function WeatherWarningsWidget({ current, hourlyData, dailyData }
     });
   }
 
-  // 3. Rain & Thunderstorm Warning Analysis
+  // 3. Flood & Waterlogging Risk Analysis
+  const hourlyPrecip = hourlyData?.precipitation || [];
+  const next24hPrecipTotal = hourlyPrecip.slice(0, 24).reduce((sum, val) => sum + (val || 0), 0);
+  const max1hPrecip = Math.max(...(hourlyPrecip.slice(0, 24) || [0]));
+
+  if (next24hPrecipTotal >= 35 || max1hPrecip >= 12) {
+    warnings.push({
+      id: 'flood-warning',
+      level: 'CRITICAL',
+      type: 'FLASH FLOOD WARNING',
+      icon: Waves,
+      color: '#06B6D4', // Cyan / Deep Teal
+      bg: 'rgba(6, 182, 212, 0.14)',
+      border: 'rgba(6, 182, 212, 0.35)',
+      message: `Critical flood risk! Expected cumulative 24h rainfall: ${next24hPrecipTotal.toFixed(1)} mm (Peak 1h: ${max1hPrecip.toFixed(1)} mm). Avoid low-lying riverbanks, flooded roads, and storm drains.`
+    });
+  } else if (next24hPrecipTotal >= 18 || max1hPrecip >= 6) {
+    warnings.push({
+      id: 'flood-advisory',
+      level: 'ADVISORY',
+      type: 'URBAN WATERLOGGING ADVISORY',
+      icon: Waves,
+      color: '#38BDF8', // Light Blue / Sky
+      bg: 'rgba(56, 189, 248, 0.1)',
+      border: 'rgba(56, 189, 248, 0.3)',
+      message: `Moderate flood risk (24h rain forecast: ${next24hPrecipTotal.toFixed(1)} mm). Expect localized waterlogging in low-lying roads and poor drainage channels.`
+    });
+  }
+
+  // 4. Rain & Thunderstorm Warning Analysis
   const code = current?.weather_code || 0;
   const isThunder = code >= 95 && code <= 99;
   const isHeavyRain = code === 65 || code === 82 || (hourlyData?.precipitation?.[0] || 0) > 4;
@@ -103,7 +132,7 @@ export default function WeatherWarningsWidget({ current, hourlyData, dailyData }
     });
   }
 
-  // 4. Wind Warning Analysis
+  // 5. Wind Warning Analysis
   const windSpeed = current?.wind_speed_10m || 0;
   if (windSpeed >= 35) {
     warnings.push({
