@@ -382,7 +382,7 @@ export default function Dashboard() {
                 flexShrink: 0
               }} />
               <span style={{ color: isSyncing ? '#60A5FA' : 'var(--text-secondary)', fontWeight: 500 }}>
-                {isSyncing ? 'SYNCING LIVE TELEMETRY...' : 'LIVE AUTO-SYNC ACTIVE (60s)'}
+                {isSyncing ? 'SYNCING LIVE TELEMETRY...' : 'LIVE AUTO-SYNC ACTIVE (120s)'}
               </span>
             </div>
 
