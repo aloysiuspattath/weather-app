@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { getWeatherDescription } from '../services/weatherApi';
-import { Cloud, CloudLightning, CloudRain, CloudSnow, Sun, MapPin, Clock, Droplets, Wind, Thermometer, Radio } from 'lucide-react';
+import { Cloud, CloudLightning, CloudRain, CloudSnow, Sun, MapPin, Clock, Droplets, Wind, Thermometer, Radio, CloudSun } from 'lucide-react';
 
-function DynamicWeatherVisualizer({ code, isDay }) {
-  const isRain = (code >= 51 && code <= 67) || (code >= 80 && code <= 81);
+function DynamicWeatherVisualizer({ code, isDay, precipRate = 0 }) {
+  const isRain = ((code >= 51 && code <= 67) || (code >= 80 && code <= 81)) && precipRate > 0;
   const isSunny = (code === 0 || code === 1) && isDay !== 0;
   const isClearNight = (code === 0 || code === 1) && isDay === 0;
-  const isCloudy = code === 2 || code === 3 || code === 45 || code === 48;
+  const isCloudy = (code === 2 || code === 3 || code === 45 || code === 48) || (((code >= 51 && code <= 67) || (code >= 80 && code <= 81)) && precipRate === 0);
   const isSnow = (code >= 71 && code <= 77) || (code >= 85 && code <= 86);
   const isThunder = code === 82 || (code >= 95 && code <= 99);
 
@@ -83,8 +83,8 @@ function DynamicWeatherVisualizer({ code, isDay }) {
         </>
       )}
 
-      {/* Rain Streaks */}
-      {(isRain || isThunder) && (
+      {/* Rain Streaks - ONLY render if actively raining (precipRate > 0) */}
+      {isRain && (
         <div style={{ position: 'absolute', inset: 0 }}>
           {rainDrops.map((drop) => (
             <div
@@ -157,8 +157,17 @@ export default function CurrentWeather({ weatherData, locationName, lat, lon }) 
   const windSpeed = Math.round(current.wind_speed_10m || 0);
   const weatherCode = current.weather_code;
   const isDay = current.is_day;
+
+  // Ground Precipitation Rate Check
+  const precipRate = current.precipitation !== undefined ? current.precipitation : ((current.rain || 0) + (current.showers || 0));
+
   const weatherInfo = getWeatherDescription(weatherCode);
-  const description = weatherInfo.desc;
+  let description = weatherInfo.desc;
+
+  // Real Ground Rain Check: If precipitation is 0.0mm, do not claim active rain!
+  if (precipRate === 0 && (weatherCode >= 51 && weatherCode <= 81)) {
+    description = "Cloudy / Nearby Rain Risk";
+  }
   
   const highTemp = daily?.temperature_2m_max?.[0] !== undefined ? Math.round(daily.temperature_2m_max[0] * 10) / 10 : '--';
   const lowTemp = daily?.temperature_2m_min?.[0] !== undefined ? Math.round(daily.temperature_2m_min[0] * 10) / 10 : '--';
@@ -174,9 +183,15 @@ export default function CurrentWeather({ weatherData, locationName, lat, lon }) 
     accentGlow = 'rgba(245, 158, 11, 0.45)';
     iconColor = '#F59E0B';
   } else if (descLower.includes('rain') || descLower.includes('drizzle')) {
-    WeatherIcon = CloudRain;
-    accentGlow = 'rgba(59, 130, 246, 0.45)';
-    iconColor = '#3B82F6';
+    if (precipRate > 0) {
+      WeatherIcon = CloudRain;
+      accentGlow = 'rgba(59, 130, 246, 0.45)';
+      iconColor = '#3B82F6';
+    } else {
+      WeatherIcon = CloudSun;
+      accentGlow = 'rgba(148, 163, 184, 0.45)';
+      iconColor = '#94A3B8';
+    }
   } else if (descLower.includes('snow')) {
     WeatherIcon = CloudSnow;
     accentGlow = 'rgba(56, 189, 248, 0.45)';
@@ -200,7 +215,7 @@ export default function CurrentWeather({ weatherData, locationName, lat, lon }) 
       boxShadow: `0 12px 36px rgba(0, 0, 0, 0.6), inset 0 0 45px ${accentGlow}`
     }}>
       {/* Live Dynamic Weather Visualizer Background */}
-      <DynamicWeatherVisualizer code={weatherCode} isDay={isDay} />
+      <DynamicWeatherVisualizer code={weatherCode} isDay={isDay} precipRate={precipRate} />
 
       {/* Header Bar: Title + Live Clock */}
       <div className="widget-header" style={{ width: '100%', marginBottom: '12px', zIndex: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -221,111 +236,118 @@ export default function CurrentWeather({ weatherData, locationName, lat, lon }) 
           alignItems: 'center', 
           gap: '5px' 
         }}>
-          <Clock size={12} style={{ color: 'var(--accent)' }} />
-          {timeString}
+          <Clock size={11} style={{ color: '#60A5FA' }} />
+          <span>{timeString}</span>
         </div>
       </div>
-      
-      {/* Center Readout & Animated 3D Floating Weather Icon Badge */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 2, padding: '4px 0' }}>
-        <div style={{ flex: 1 }}>
-          {/* Temperature Figure */}
-          <div style={{ 
-            fontFamily: 'var(--font-data)', 
-            fontSize: 'clamp(58px, 7.5vw, 76px)', 
-            fontWeight: '300', 
-            lineHeight: '0.92',
-            letterSpacing: '-0.04em',
-            fontVariantNumeric: 'tabular-nums',
-            marginBottom: '10px',
-            color: '#ffffff',
-            textShadow: '0 6px 20px rgba(0, 0, 0, 0.7)',
-            display: 'flex',
-            alignItems: 'flex-start'
-          }}>
-            {temp}<span style={{ fontSize: '32px', color: 'rgba(255,255,255,0.7)', marginLeft: '2px', fontWeight: 300 }}>°C</span>
+
+      {/* Main Temperature & Weather Icon Section */}
+      <div style={{ position: 'relative', zIndex: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', margin: '4px 0 12px 0' }}>
+        <div>
+          {/* Main Temperature Display */}
+          <div style={{ display: 'flex', alignItems: 'baseline', lineHeight: 1 }}>
+            <span className="font-data" style={{ fontSize: '72px', fontWeight: 300, color: '#ffffff', letterSpacing: '-0.04em', textShadow: '0 4px 16px rgba(0,0,0,0.5)' }}>
+              {Math.floor(temp)}
+            </span>
+            <span className="font-data text-secondary" style={{ fontSize: '32px', fontWeight: 300, marginLeft: '2px', textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>
+              °C
+            </span>
           </div>
-          
-          {/* Condition Title Badge (Clean Flat Glass) */}
-          <div style={{ 
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            background: 'rgba(255, 255, 255, 0.06)',
-            backdropFilter: 'blur(12px)',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-            padding: '4px 12px',
-            borderRadius: '20px',
-            marginBottom: '10px'
-          }}>
-            <span style={{ fontSize: '15px', fontWeight: '600', color: '#ffffff', letterSpacing: '-0.01em' }}>
+
+          {/* Description Badge */}
+          <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ 
+              background: 'rgba(255, 255, 255, 0.1)', 
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              padding: '5px 14px', 
+              borderRadius: '20px', 
+              fontSize: '12.5px',
+              fontFamily: 'var(--font-main)',
+              fontWeight: 600,
+              color: '#F8FAFC',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+              letterSpacing: '0.01em'
+            }}>
               {description}
             </span>
           </div>
-          
-          {/* High / Low & Feels Like */}
-          <div className="text-secondary font-data" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.85)', textShadow: '0 2px 6px rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <span>Feels like {feelsLike}°C</span>
-            <span style={{ color: 'rgba(255,255,255,0.3)' }}>•</span>
-            <span style={{ color: 'var(--accent-warm)', fontWeight: 600 }}>H: {highTemp}°</span>
-            <span style={{ color: '#60A5FA', fontWeight: 600 }}>L: {lowTemp}°</span>
+
+          {/* Feels like & Daily High/Low */}
+          <div style={{ marginTop: '12px', fontSize: '12px', color: 'rgba(255, 255, 255, 0.78)', fontFamily: 'var(--font-main)', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <span>Feels like <strong className="font-data" style={{ color: '#ffffff' }}>{feelsLike}°C</strong></span>
+            <span style={{ opacity: 0.4 }}>•</span>
+            <span className="font-data" style={{ fontSize: '11.5px' }}>
+              H: <strong style={{ color: '#F59E0B' }}>{highTemp}°</strong> L: <strong style={{ color: '#60A5FA' }}>{lowTemp}°</strong>
+            </span>
           </div>
         </div>
 
-        {/* Floating 3D Weather Icon Badge with 3D Tilt & Glow */}
-        <div 
-          className="animate-float-icon"
-          style={{
-            width: '94px',
-            height: '94px',
+        {/* Ambient Orb Weather Icon Container */}
+        <div style={{ 
+          position: 'relative', 
+          width: '85px', 
+          height: '85px', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          flexShrink: 0
+        }}>
+          {/* Glowing Background Glass Sphere */}
+          <div style={{ 
+            position: 'absolute',
+            inset: 0,
             borderRadius: '50%',
-            background: `radial-gradient(circle, ${iconColor}33 0%, rgba(10,15,25,0.45) 70%)`,
-            border: `1px solid ${iconColor}66`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-            boxShadow: `0 0 36px ${accentGlow}`,
-            cursor: 'pointer'
-          }}
-        >
-          <WeatherIcon size={48} style={{ color: iconColor, filter: `drop-shadow(0 0 12px ${iconColor})` }} />
+            background: 'radial-gradient(circle at 35% 35%, rgba(255,255,255,0.12) 0%, rgba(0,0,0,0.4) 100%)',
+            border: '1px solid rgba(255,255,255,0.18)',
+            boxShadow: `0 8px 24px rgba(0,0,0,0.5), 0 0 20px ${accentGlow}`,
+            backdropFilter: 'blur(10px)'
+          }} />
+          
+          <WeatherIcon size={42} style={{ color: iconColor, filter: `drop-shadow(0 0 10px ${accentGlow})`, position: 'relative', zIndex: 3 }} />
         </div>
       </div>
 
-      {/* Telemetry Strip: Humidity, Wind */}
-      <div style={{
-        zIndex: 2,
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px',
-        margin: '12px 0 10px',
-        background: 'rgba(0, 0, 0, 0.4)',
-        backdropFilter: 'blur(10px)',
+      {/* Telemetry Summary Bar */}
+      <div style={{ 
+        position: 'relative', 
+        zIndex: 2, 
+        marginTop: 'auto',
+        background: 'rgba(0, 0, 0, 0.35)', 
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        borderRadius: '12px', 
+        padding: '10px 14px',
         border: '1px solid rgba(255, 255, 255, 0.08)',
-        borderRadius: '10px',
-        padding: '8px 12px'
+        display: 'flex',
+        justify: 'space-between',
+        alignItems: 'center'
       }}>
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <Droplets size={13} style={{ color: '#60A5FA' }} />
-          <span className="font-data text-tertiary" style={{ fontSize: '10px' }}>HUMIDITY</span>
-          <span className="font-data" style={{ fontSize: '12px', fontWeight: 600, color: '#ffffff', marginLeft: 'auto' }}>{humidity}%</span>
+          <span className="text-tertiary font-data" style={{ fontSize: '10px', letterSpacing: '0.06em' }}>HUMIDITY</span>
+          <span className="font-data" style={{ fontSize: '12px', fontWeight: 600, color: '#ffffff', marginLeft: '4px' }}>{humidity}%</span>
         </div>
-        <div style={{ width: '1px', height: '14px', background: 'rgba(255,255,255,0.1)' }} />
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px' }}>
+
+        <div style={{ height: '14px', width: '1px', background: 'rgba(255,255,255,0.1)' }} />
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <Wind size={13} style={{ color: '#10B981' }} />
-          <span className="font-data text-tertiary" style={{ fontSize: '10px' }}>WIND</span>
-          <span className="font-data" style={{ fontSize: '12px', fontWeight: 600, color: '#ffffff', marginLeft: 'auto' }}>{windSpeed} <span style={{ fontSize: '9px', fontWeight: 400 }}>km/h</span></span>
+          <span className="text-tertiary font-data" style={{ fontSize: '10px', letterSpacing: '0.06em' }}>WIND</span>
+          <span className="font-data" style={{ fontSize: '12px', fontWeight: 600, color: '#ffffff', marginLeft: '4px' }}>{windSpeed} <span style={{ fontSize: '9px', fontWeight: 400 }}>km/h</span></span>
         </div>
       </div>
 
-      {/* Footer Location & Coordinates */}
-      <div style={{ zIndex: 2, marginTop: 'auto', borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '10px', width: '100%' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '600', fontSize: '14px', color: '#ffffff', textShadow: '0 2px 4px rgba(0,0,0,0.7)' }}>
-          <MapPin size={14} style={{ color: 'var(--accent)' }} />
-          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{locationName}</span>
+      {/* Footer Location Readout */}
+      <div style={{ position: 'relative', zIndex: 2, marginTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
+          <MapPin size={13} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+          <span style={{ fontWeight: 600, fontSize: '13px', color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {locationName}
+          </span>
         </div>
-        <div className="font-data" style={{ fontSize: '10px', marginTop: '2px', color: 'rgba(255,255,255,0.6)', letterSpacing: '0.06em', textShadow: '0 2px 4px rgba(0,0,0,0.6)' }}>
+        <div className="font-data text-tertiary" style={{ fontSize: '9px', flexShrink: 0, marginLeft: '8px' }}>
           LAT {Number(lat).toFixed(4)}° • LON {Number(lon).toFixed(4)}°
         </div>
       </div>
