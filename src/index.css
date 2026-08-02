@@ -9,11 +9,11 @@
   --bg-void: #05070c;
   --bg-deep: #0a0f19;
 
-  --glass-bg: rgba(15, 22, 35, 0.58);
-  --glass-bg-hover: rgba(22, 32, 50, 0.72);
+  --glass-bg: rgba(12, 17, 28, 0.72);
+  --glass-bg-hover: rgba(18, 25, 40, 0.84);
   --glass-border: 1px solid rgba(255, 255, 255, 0.08);
   --glass-border-top: 1px solid rgba(255, 255, 255, 0.14);
-  --glass-shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
+  --glass-shadow: 0 12px 36px rgba(0, 0, 0, 0.65);
   --glass-blur: blur(24px) saturate(150%);
 
   --text-primary: rgba(248, 250, 252, 1);
