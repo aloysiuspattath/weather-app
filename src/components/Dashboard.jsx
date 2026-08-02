@@ -175,7 +175,7 @@ export default function Dashboard() {
         <nav className="top-nav">
           <div className="nav-brand-container">
             <div className="nav-brand" onClick={() => setCurrentTab('Home')}>
-              <CloudSun size={22} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
+              <img src="/logo.svg" alt="NexusWX Logo" style={{ width: '28px', height: '28px', borderRadius: '6px', filter: 'drop-shadow(0 0 8px rgba(59, 130, 246, 0.5))' }} />
               <span className="nav-brand-text">NexusWX</span>
             </div>
 
@@ -264,40 +264,6 @@ export default function Dashboard() {
                   ))}
                 </div>
               )}
-            </div>
-
-            {/* Language Selector Pill Bar */}
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '3px', 
-              background: 'rgba(255, 255, 255, 0.04)', 
-              border: '1px solid rgba(255, 255, 255, 0.08)', 
-              borderRadius: 'var(--radius-inner)', 
-              padding: '2px 4px' 
-            }}>
-              <Globe size={12} style={{ color: 'var(--text-tertiary)', marginLeft: '3px', marginRight: '1px' }} />
-              {LANGUAGES.map(l => (
-                <button
-                  key={l.code}
-                  onClick={() => setLang(l.code)}
-                  style={{
-                    background: lang === l.code ? 'rgba(59, 130, 246, 0.3)' : 'transparent',
-                    border: lang === l.code ? '1px solid var(--accent)' : '1px solid transparent',
-                    color: lang === l.code ? '#ffffff' : 'var(--text-tertiary)',
-                    borderRadius: '4px',
-                    padding: '2px 6px',
-                    fontSize: '10px',
-                    fontFamily: 'var(--font-data)',
-                    cursor: 'pointer',
-                    fontWeight: lang === l.code ? 600 : 400,
-                    transition: 'all 0.15s ease'
-                  }}
-                  title={l.label}
-                >
-                  {l.short}
-                </button>
-              ))}
             </div>
 
             <button className="icon-btn" onClick={handleLocateMe} title="Auto-detect Location">
