@@ -258,10 +258,10 @@ export default function CurrentWeather({ weatherData, locationName, lat, lon }) 
           {/* Main Temperature Display */}
           <div style={{ display: 'flex', alignItems: 'baseline', lineHeight: 1 }}>
             <span className="font-data" style={{ fontSize: '72px', fontWeight: 300, color: '#ffffff', letterSpacing: '-0.04em', textShadow: '0 4px 16px rgba(0,0,0,0.5)' }}>
-              {Math.floor(temp)}
+              {Math.floor(temp || 0)}
             </span>
             <span className="font-data" style={{ fontSize: '32px', fontWeight: 300, color: 'rgba(255,255,255,0.7)', textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>
-              .{String(temp.toFixed(1)).split('.')[1]}
+              .{String(Number(temp || 0).toFixed(1)).split('.')[1]}
             </span>
             <span className="font-data text-secondary" style={{ fontSize: '24px', fontWeight: 300, marginLeft: '2px', textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>
               °C

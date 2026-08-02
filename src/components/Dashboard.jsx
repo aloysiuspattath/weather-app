@@ -89,11 +89,15 @@ export default function Dashboard() {
         getWeatherData(lat, lon),
         getAirQualityData(lat, lon)
       ]);
-      setWeatherData(weather);
-      setAirQualityData(aq);
-      const now = new Date();
-      setLastUpdated(now);
-      lastSyncTimeRef.current = now.getTime();
+      
+      setWeatherData(prev => weather !== null ? weather : prev);
+      setAirQualityData(prev => aq !== null ? aq : prev);
+      
+      if (weather !== null || aq !== null) {
+        const now = new Date();
+        setLastUpdated(now);
+        lastSyncTimeRef.current = now.getTime();
+      }
     } catch (err) {
       console.warn("Background auto-sync failed:", err);
     } finally {
