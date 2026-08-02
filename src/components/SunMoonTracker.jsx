@@ -55,7 +55,7 @@ export default function SunMoonTracker({ dailyData }) {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
         {/* Arc Visualizer */}
-        <div style={{ position: 'relative', width: '100%', height: '90px', margin: '4px 0' }}>
+        <div style={{ position: 'relative', width: '100%', height: '105px', margin: '2px 0' }}>
           <svg viewBox="0 0 200 100" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
             <defs>
               <linearGradient id="sunArcGrad" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -120,37 +120,51 @@ export default function SunMoonTracker({ dailyData }) {
         </div>
 
         {/* Sunrise / Sunset Readouts */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', margin: '4px 0' }}>
           <div style={{
             display: 'flex', alignItems: 'center', gap: '8px',
-            background: 'rgba(0, 0, 0, 0.3)', padding: '6px 10px',
+            background: 'rgba(0, 0, 0, 0.3)', padding: '8px 10px',
             borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.06)',
             transition: 'border-color 0.25s, background 0.25s', minWidth: 0
           }}>
             <Sunrise size={15} style={{ color: '#F59E0B', flexShrink: 0 }} />
             <div style={{ minWidth: 0, overflow: 'hidden' }}>
-              <div className="text-tertiary font-data" style={{ fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Sunrise</div>
+              <div className="text-tertiary font-data" style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Sunrise</div>
               <div className="font-data" style={{ fontSize: '12px', fontWeight: 600, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{sunriseTime}</div>
             </div>
           </div>
 
           <div style={{
             display: 'flex', alignItems: 'center', gap: '8px',
-            background: 'rgba(0, 0, 0, 0.3)', padding: '6px 10px',
+            background: 'rgba(0, 0, 0, 0.3)', padding: '8px 10px',
             borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.06)',
             transition: 'border-color 0.25s, background 0.25s', minWidth: 0
           }}>
             <Sunset size={15} style={{ color: '#EF4444', flexShrink: 0 }} />
             <div style={{ minWidth: 0, overflow: 'hidden' }}>
-              <div className="text-tertiary font-data" style={{ fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Sunset</div>
+              <div className="text-tertiary font-data" style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Sunset</div>
               <div className="font-data" style={{ fontSize: '12px', fontWeight: 600, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{sunsetTime}</div>
             </div>
           </div>
         </div>
 
-        <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: 'var(--text-tertiary)', fontFamily: 'var(--font-data)' }}>
-          <span style={{ letterSpacing: '0.06em' }}>{isNight ? 'NIGHT ELEVATION' : 'DAYLIGHT ELEVATION'}</span>
-          <span style={{ color: markerColor, fontWeight: 600, letterSpacing: '0.05em' }}>{sunProgress}% COMPLETE</span>
+        {/* Progress Telemetry Bar & Label */}
+        <div style={{
+          paddingTop: '8px',
+          borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '6px'
+        }}>
+          {/* Linear Progress Bar fill */}
+          <div style={{ width: '100%', height: '4px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '2px', overflow: 'hidden' }}>
+            <div style={{ width: `${sunProgress}%`, height: '100%', background: markerColor, borderRadius: '2px', transition: 'width 1s ease' }} />
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '10px', color: 'var(--text-tertiary)', fontFamily: 'var(--font-data)' }}>
+            <span style={{ letterSpacing: '0.06em' }}>{isNight ? 'NIGHT ELEVATION' : 'DAYLIGHT ELEVATION'}</span>
+            <span style={{ color: markerColor, fontWeight: 600, letterSpacing: '0.05em' }}>{sunProgress}% COMPLETE</span>
+          </div>
         </div>
       </div>
     </div>
