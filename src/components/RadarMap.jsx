@@ -51,10 +51,10 @@ export default function RadarMap({ lat, lon, locationName }) {
         gap: '8px',
         pointerEvents: 'none'
       }}>
-        {/* Title badge */}
+        {/* Title & Provider Badge */}
         <div style={{
           pointerEvents: 'auto',
-          background: 'rgba(10, 15, 25, 0.75)',
+          background: 'rgba(10, 15, 25, 0.85)',
           backdropFilter: 'blur(14px)',
           WebkitBackdropFilter: 'blur(14px)',
           padding: '6px 12px',
@@ -62,12 +62,17 @@ export default function RadarMap({ lat, lon, locationName }) {
           border: '1px solid rgba(255, 255, 255, 0.1)',
           display: 'flex',
           alignItems: 'center',
-          gap: '6px',
+          gap: '8px',
           boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4)'
         }}>
           <Map size={13} style={{ color: 'var(--accent)' }} />
           <span className="font-data" style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.08em', color: 'var(--text-primary)' }}>
             RADAR TELEMETRY
+          </span>
+          <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '10px' }}>|</span>
+          <Wind size={11} style={{ color: '#FF6B6B' }} />
+          <span className="font-data" style={{ fontSize: '9px', color: 'var(--text-tertiary)', letterSpacing: '0.06em' }}>
+            WINDY.COM • ECMWF
           </span>
         </div>
 
@@ -105,22 +110,6 @@ export default function RadarMap({ lat, lon, locationName }) {
           }}
           allow="fullscreen"
         />
-      </div>
-
-      {/* Powered-by badge */}
-      <div style={{
-        position: 'absolute', bottom: '10px', left: '12px', zIndex: 10,
-        display: 'flex', alignItems: 'center', gap: '6px',
-        background: 'rgba(10, 15, 25, 0.85)', backdropFilter: 'blur(14px)',
-        WebkitBackdropFilter: 'blur(14px)',
-        padding: '5px 10px', borderRadius: '6px',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
-      }}>
-        <Wind size={12} style={{ color: '#FF6B6B' }} />
-        <span className="font-data" style={{ fontSize: '9px', color: 'var(--text-tertiary)', letterSpacing: '0.06em' }}>
-          POWERED BY WINDY.COM • ECMWF SATELLITE
-        </span>
       </div>
     </div>
   );
