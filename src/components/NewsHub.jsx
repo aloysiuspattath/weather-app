@@ -25,11 +25,11 @@ export default function NewsHub({ location }) {
 
   const getSourceBadgeColor = (sourceName = '') => {
     const s = sourceName.toLowerCase();
-    if (s.includes('hindu')) return '#3B82F6';
-    if (s.includes('express')) return '#EF4444';
-    if (s.includes('mint')) return '#10B981';
-    if (s.includes('manorama') || s.includes('mathrubhumi')) return '#8B5CF6';
-    return '#F59E0B';
+    if (s.includes('hindu')) return '#60A5FA';
+    if (s.includes('express')) return '#F87171';
+    if (s.includes('mint')) return '#34D399';
+    if (s.includes('manorama') || s.includes('mathrubhumi')) return '#A78BFA';
+    return '#3B82F6'; // Sleek dark blue/cyan accent instead of golden yellow
   };
 
   const tabs = [
@@ -87,7 +87,7 @@ export default function NewsHub({ location }) {
                   overflow: 'hidden',
                   textDecoration: 'none'
                 }}>
-                <div style={{ height: '160px', overflow: 'hidden', position: 'relative' }}>
+                <div style={{ height: '150px', overflow: 'hidden', position: 'relative' }}>
                   {hasValidImage ? (
                     <img 
                       src={article.image} 
@@ -98,26 +98,26 @@ export default function NewsHub({ location }) {
                       onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
                     />
                   ) : (
-                    /* Stylized Monogram News Text Placeholder */
+                    /* Subtle Dark Glass Monogram News Text Placeholder */
                     <div style={{
                       width: '100%',
                       height: '100%',
-                      background: `linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(11, 16, 26, 0.98))`,
-                      borderBottom: `2px solid ${accentColor}`,
+                      background: `linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(9, 13, 22, 0.95))`,
+                      borderBottom: `1px solid rgba(255, 255, 255, 0.06)`,
                       display: 'flex',
                       flexDirection: 'column',
-                      justifyContent: 'center',
+                      justify: 'center',
                       alignItems: 'center',
                       padding: '16px',
                       position: 'relative',
                       textAlign: 'center'
                     }}>
-                      <Newspaper size={32} style={{ color: accentColor, marginBottom: '8px', opacity: 0.9 }} />
+                      <Newspaper size={26} style={{ color: accentColor, marginBottom: '6px', opacity: 0.75 }} />
                       <div style={{
                         fontFamily: 'var(--font-data)',
-                        fontSize: '12px',
-                        fontWeight: 700,
-                        color: '#F8FAFC',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        color: 'rgba(241, 245, 249, 0.9)',
                         letterSpacing: '0.08em',
                         textTransform: 'uppercase'
                       }}>
@@ -127,7 +127,7 @@ export default function NewsHub({ location }) {
                         fontFamily: 'var(--font-data)',
                         fontSize: '9px',
                         color: 'var(--text-tertiary)',
-                        marginTop: '4px',
+                        marginTop: '3px',
                         letterSpacing: '0.05em'
                       }}>
                         VERIFIED NEWS DISPATCH
