@@ -1,5 +1,5 @@
 import React from 'react';
-import { Droplets, Wind, Sun, Gauge } from 'lucide-react';
+import { Droplets, Wind, Sun, Gauge, Navigation } from 'lucide-react';
 
 const getWindDirection = (degrees) => {
   const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
@@ -18,8 +18,9 @@ export default function WeatherDetails({ current, hourlyData, aqi }) {
   if (!current) return null;
 
   const humidity = current.relative_humidity_2m || 0;
-  const windSpeed = current.wind_speed_10m || 0;
-  const windDir = getWindDirection(current.wind_direction_10m || 0);
+  const windSpeed = Math.round(current.wind_speed_10m || 0);
+  const windDegrees = Math.round(current.wind_direction_10m || 0);
+  const windDir = getWindDirection(windDegrees);
   const pressure = current.surface_pressure || 0;
   
   // Get current UV index from current object or match current hour in hourlyData
@@ -51,16 +52,28 @@ export default function WeatherDetails({ current, hourlyData, aqi }) {
         </div>
       </div>
 
-      {/* Wind */}
+      {/* Wind & Compass Vector */}
       <div className="widget-panel detail-card animate-in delay-3" style={{ justifyContent: 'space-between' }}>
         <div className="detail-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Wind size={14} style={{ color: 'var(--accent)' }} /> WIND
+          <Wind size={14} style={{ color: 'var(--accent)' }} /> WIND VECTOR
         </div>
         <div>
-          <div className="detail-value">
-            {windSpeed}<span className="detail-unit">km/h</span>
+          <div className="detail-value" style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+            <span>{windSpeed}</span>
+            <span className="detail-unit">km/h</span>
           </div>
-          <div className="detail-desc font-data">{windDir} Vector</div>
+          <div className="detail-desc font-data" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#60A5FA', marginTop: '2px' }}>
+            <Navigation 
+              size={12} 
+              style={{ 
+                transform: `rotate(${windDegrees}deg)`, 
+                transition: 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
+                color: '#60A5FA',
+                flexShrink: 0
+              }} 
+            />
+            <span>{windDir} ({windDegrees}°)</span>
+          </div>
         </div>
       </div>
 
