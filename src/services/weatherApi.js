@@ -65,15 +65,26 @@ export async function getWeatherData(lat, lon) {
       }
     };
 
-    // Ensemble Calibration: Calibrate current temperature & ground rain code
-    if (data.current && data.hourly) {
-      // Find current hour index
-      const nowMs = new Date().getTime();
-      let nowIdx = data.hourly.time.findIndex(t => new Date(t).getTime() >= nowMs - 1800000);
+    // Ensemble & Local Timezone Calibration: Sync current temperature to local hour index
+    if (data.current && data.hourly && data.hourly.time?.length) {
+      const now = new Date();
+      const currentLocalHour = now.getHours();
+      const currentLocalDate = now.getDate();
+
+      // Find exact index matching local hour & date
+      let nowIdx = data.hourly.time.findIndex(t => {
+        const d = new Date(t);
+        return d.getHours() === currentLocalHour && d.getDate() === currentLocalDate;
+      });
+
+      if (nowIdx === -1) {
+        const nowMs = now.getTime();
+        nowIdx = data.hourly.time.findIndex(t => new Date(t).getTime() >= nowMs - 1800000);
+      }
       if (nowIdx === -1) nowIdx = 0;
 
       // Extract current hour temperatures across models (ECMWF, GFS, JMA, ICON)
-      const ecmwfTemp = data.hourly.temperature_2m_ecmwf_ifs04?.[nowIdx];
+      const ecmwfTemp = data.hourly.temperature_2m_ecmwf_ifs04?.[nowIdx] ?? data.hourly.temperature_2m_best_match?.[nowIdx];
       const gfsTemp = data.hourly.temperature_2m_gfs_seamless?.[nowIdx];
       const jmaTemp = data.hourly.temperature_2m_jma_seamless?.[nowIdx];
       const iconTemp = data.hourly.temperature_2m_icon_seamless?.[nowIdx];
@@ -81,10 +92,10 @@ export async function getWeatherData(lat, lon) {
 
       if (validTemps.length > 0) {
         const ensembleMean = validTemps.reduce((a, b) => a + b, 0) / validTemps.length;
-        // If raw best_match temperature is > 1.8°C lower/higher than multi-model consensus, calibrate to ensemble mean
-        if (Math.abs(data.current.temperature_2m - ensembleMean) > 1.8) {
-          data.current.temperature_2m = Math.round(ensembleMean * 10) / 10;
-        }
+        // Always sync current temperature to the calibrated local hourly ensemble mean
+        data.current.temperature_2m = Math.round(ensembleMean * 10) / 10;
+      } else if (data.hourly.temperature_2m_best_match?.[nowIdx] !== undefined) {
+        data.current.temperature_2m = Math.round(data.hourly.temperature_2m_best_match[nowIdx] * 10) / 10;
       }
 
       // Ground Rain Calibration: If total ground precipitation < 0.35 mm/h, normalize WMO rain/shower codes (51-81) to actual cloud cover code
