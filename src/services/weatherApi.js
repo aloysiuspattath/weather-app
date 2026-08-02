@@ -294,7 +294,9 @@ async function getWeatherApiFallback(lat, lon, key) {
       precipitation: data.current.precip_mm,
       is_day: data.current.is_day,
       weather_code: mapCode(data.current.condition.code),
-      uv_index: data.current.uv
+      uv_index: data.current.uv,
+      surface_pressure: data.current.pressure_mb,
+      pressure_msl: data.current.pressure_mb
     },
     hourly: {
       time: hourlyTime,
@@ -365,12 +367,12 @@ function generateRegionalAlerts(data) {
     alerts.push({ type: 'HEAT', level: 'ORANGE', title: 'Heatwave Warning', message: `High temperatures up to ${maxTemp.toFixed(1)}°C expected. Stay hydrated.`, color: '#F97316', bg: 'rgba(249, 115, 22, 0.15)' });
   }
 
-  // 2. Rain Alerts
-  if (maxPrecip >= 35) {
+  // 2. Rain Alerts (Recalibrated for tropical/monsoon persistent rain sensitivity & WeatherAPI conservatism)
+  if (maxPrecip >= 15) {
     alerts.push({ type: 'RAIN', level: 'RED', title: 'Extreme Rainfall Alert', message: `Destructive downpours up to ${maxPrecip.toFixed(1)} mm/h expected. High risk of flash floods.`, color: '#EF4444', bg: 'rgba(239, 68, 68, 0.15)' });
-  } else if (maxPrecip >= 15) {
-    alerts.push({ type: 'RAIN', level: 'ORANGE', title: 'Heavy Rainfall Warning', message: `Intense rain up to ${maxPrecip.toFixed(1)} mm/h expected. Localized flooding possible.`, color: '#F97316', bg: 'rgba(249, 115, 22, 0.15)' });
   } else if (maxPrecip >= 5) {
+    alerts.push({ type: 'RAIN', level: 'ORANGE', title: 'Heavy Rainfall Warning', message: `Intense rain up to ${maxPrecip.toFixed(1)} mm/h expected. Localized flooding possible.`, color: '#F97316', bg: 'rgba(249, 115, 22, 0.15)' });
+  } else if (maxPrecip >= 1.5) {
     alerts.push({ type: 'RAIN', level: 'YELLOW', title: 'Moderate Rain Watch', message: `Continuous rain expected (${maxPrecip.toFixed(1)} mm/h peak). Expect waterlogging.`, color: '#EAB308', bg: 'rgba(234, 179, 8, 0.15)' });
   }
 
