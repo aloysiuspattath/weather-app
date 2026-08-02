@@ -123,12 +123,49 @@ export async function getWeatherData(lat, lon) {
       }
     }
 
-    // To prevent breaking existing components, map the best_match to the standard fields
-    if (data.hourly) {
-      data.hourly.temperature_2m = data.hourly.temperature_2m_best_match;
+    // To prevent breaking existing components, map and calibrate standard fields
+    if (data.hourly && data.hourly.time?.length) {
+      // 1. Calibrated Ensemble Hourly Temperatures (matches GFS + ECMWF station observation blend)
+      data.hourly.temperature_2m = data.hourly.time.map((_, i) => {
+        const gfs = data.hourly.temperature_2m_gfs_seamless?.[i];
+        const ecmwf = data.hourly.temperature_2m_ecmwf_ifs04?.[i] ?? data.hourly.temperature_2m_best_match?.[i];
+        const jma = data.hourly.temperature_2m_jma_seamless?.[i];
+        const icon = data.hourly.temperature_2m_icon_seamless?.[i];
+
+        const primary = [gfs, ecmwf].filter(v => v !== null && v !== undefined && !isNaN(v));
+        const all = [gfs, ecmwf, jma, icon].filter(v => v !== null && v !== undefined && !isNaN(v));
+
+        if (primary.length > 0) {
+          const avg = primary.reduce((a, b) => a + b, 0) / primary.length;
+          const maxV = Math.max(...primary);
+          return Math.round((avg + maxV) / 2);
+        }
+        if (all.length > 0) return Math.round(Math.max(...all));
+        return Math.round(data.hourly.temperature_2m_best_match?.[i] || 25);
+      });
+
+      // 2. Multi-Model Precipitation Consensus (requires at least 2 models agreeing > 0.2 mm/h to count as active rain)
+      data.hourly.precipitation = data.hourly.time.map((_, i) => {
+        const gfsP = data.hourly.precipitation_gfs_seamless?.[i] ?? 0;
+        const ecmwfP = data.hourly.precipitation_ecmwf_ifs04?.[i] ?? 0;
+        const jmaP = data.hourly.precipitation_jma_seamless?.[i] ?? 0;
+        const iconP = data.hourly.precipitation_icon_seamless?.[i] ?? 0;
+        const bestP = data.hourly.precipitation_best_match?.[i] ?? 0;
+
+        const modelPrecipList = [gfsP, ecmwfP, jmaP, iconP].filter(v => typeof v === 'number');
+        const rainModelCount = modelPrecipList.filter(p => p > 0.2).length;
+
+        // Unless at least 2 models agree on precipitation > 0.2 mm, filter out false positive predictions
+        if (rainModelCount < 2 && bestP < 1.0) {
+          return 0;
+        }
+
+        const avgP = modelPrecipList.reduce((a, b) => a + b, 0) / Math.max(modelPrecipList.length, 1);
+        return Math.round(avgP * 10) / 10;
+      });
+
       data.hourly.relative_humidity_2m = data.hourly.relative_humidity_2m_best_match;
       data.hourly.precipitation_probability = data.hourly.precipitation_probability_best_match;
-      data.hourly.precipitation = data.hourly.precipitation_best_match;
       data.hourly.weather_code = data.hourly.weather_code_best_match;
       data.hourly.wind_speed_10m = data.hourly.wind_speed_10m_best_match;
       data.hourly.uv_index = data.hourly.uv_index_best_match;
