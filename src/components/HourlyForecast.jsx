@@ -3,7 +3,7 @@ import * as LucideIcons from 'lucide-react';
 import { getWeatherDescription } from '../services/weatherApi';
 
 export default function HourlyForecast({ hourlyData }) {
-  if (!hourlyData) return null;
+  if (!hourlyData || !hourlyData.time?.length || !hourlyData.temperature_2m?.length) return null;
 
   const now = new Date();
   const currentHourNum = now.getHours();
@@ -23,7 +23,7 @@ export default function HourlyForecast({ hourlyData }) {
     const idx = startIdx + index;
     const rainProb = hourlyData?.precipitation_probability?.[idx] !== undefined ? hourlyData.precipitation_probability[idx] : 0;
     const precipAmount = hourlyData?.precipitation?.[idx] !== undefined ? hourlyData.precipitation[idx] : 0;
-    let code = hourlyData.weather_code[idx];
+    let code = hourlyData.weather_code?.[idx] ?? 0;
 
     // If actual precipitation is near 0 but WMO code claims rain/thunder/snow (51-99), normalize to cloud/overcast
     if (precipAmount < 0.35 && code >= 51) {
@@ -38,7 +38,7 @@ export default function HourlyForecast({ hourlyData }) {
 
     return {
       time: timeLabel,
-      temp: hourlyData.temperature_2m[idx],
+      temp: hourlyData.temperature_2m?.[idx] ?? 0,
       code,
       precipAmount,
       rainProb,

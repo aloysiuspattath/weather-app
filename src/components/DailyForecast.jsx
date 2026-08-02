@@ -3,7 +3,7 @@ import * as LucideIcons from 'lucide-react';
 import { getWeatherDescription } from '../services/weatherApi';
 
 export default function DailyForecast({ dailyData }) {
-  if (!dailyData) return null;
+  if (!dailyData || !dailyData.time?.length || !dailyData.temperature_2m_max?.length || !dailyData.temperature_2m_min?.length) return null;
 
   // Compute global min/max for the temp range bar
   const allMax = dailyData.temperature_2m_max.slice(0, 7);
@@ -18,7 +18,7 @@ export default function DailyForecast({ dailyData }) {
     const min = Math.round(dailyData.temperature_2m_min[index]);
     const barLeft  = ((min - globalMin) / range) * 100;
     const barWidth = ((max - min) / range) * 100;
-    const code = dailyData.weather_code[index];
+    const code = dailyData.weather_code?.[index] ?? 0;
     const isRainDay = (code >= 51 && code <= 67) || (code >= 80 && code <= 82) || (code >= 95);
 
     return {

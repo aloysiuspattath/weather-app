@@ -346,9 +346,9 @@ function generateRegionalAlerts(data) {
   let maxWind = 0;
 
   for (let i = curHourIdx; i < scanLimit; i++) {
-    if (data.hourly.temperature_2m[i] > maxTemp) maxTemp = data.hourly.temperature_2m[i];
-    if (data.hourly.precipitation[i] > maxPrecip) maxPrecip = data.hourly.precipitation[i];
-    if (data.hourly.wind_speed_10m[i] > maxWind) maxWind = data.hourly.wind_speed_10m[i];
+    if ((data.hourly.temperature_2m?.[i] ?? -99) > maxTemp) maxTemp = data.hourly.temperature_2m[i];
+    if ((data.hourly.precipitation?.[i] ?? 0) > maxPrecip) maxPrecip = data.hourly.precipitation[i];
+    if ((data.hourly.wind_speed_10m?.[i] ?? 0) > maxWind) maxWind = data.hourly.wind_speed_10m[i];
   }
 
   // 1. Heat Alerts

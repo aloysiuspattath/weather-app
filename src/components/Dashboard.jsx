@@ -16,6 +16,7 @@ import WillItRainWidget from './WillItRainWidget';
 import ModelComparison from './ModelComparison';
 import WeatherWarningsWidget from './WeatherWarningsWidget';
 import HomeNewsFeed from './HomeNewsFeed';
+import ErrorBoundary from './ErrorBoundary';
 
 const DEFAULT_LOCATION = { 
   name: "Kochi, Kerala", 
@@ -429,78 +430,94 @@ export default function Dashboard() {
         {currentTab === 'Home' ? (
           <main className="monitor-grid">
             {/* Meteorological Advisories & Hazard Warnings Banner */}
-            <WeatherWarningsWidget 
-              current={weatherData?.current}
-              hourlyData={weatherData?.hourly}
-              dailyData={weatherData?.daily}
-            />
+            <ErrorBoundary>
+              <WeatherWarningsWidget 
+                current={weatherData?.current}
+                hourlyData={weatherData?.hourly}
+                dailyData={weatherData?.daily}
+              />
+            </ErrorBoundary>
 
             {/* Row 1: Current Weather (span 4), Weather Details (span 4), Sun & Moon Tracker (span 4) */}
             <div className="grid-r1-c1 animate-in">
-              <CurrentWeather 
-                weatherData={weatherData} 
-                locationName={location.name} 
-                lat={location.lat} 
-                lon={location.lon} 
-              />
+              <ErrorBoundary>
+                <CurrentWeather 
+                  weatherData={weatherData} 
+                  locationName={location.name} 
+                  lat={location.lat} 
+                  lon={location.lon} 
+                />
+              </ErrorBoundary>
             </div>
 
             <div className="grid-r1-c2 animate-in delay-1">
-              <WeatherDetails 
-                current={weatherData?.current} 
-                hourlyData={weatherData?.hourly} 
-                aqi={airQualityData?.current?.us_aqi} 
-              />
+              <ErrorBoundary>
+                <WeatherDetails 
+                  current={weatherData?.current} 
+                  hourlyData={weatherData?.hourly} 
+                  aqi={airQualityData?.current?.us_aqi} 
+                />
+              </ErrorBoundary>
             </div>
 
             <div className="grid-r1-c3 animate-in delay-2">
-              <SunMoonTracker 
-                dailyData={weatherData?.daily} 
-                isDay={weatherData?.current?.is_day} 
-              />
+              <ErrorBoundary>
+                <SunMoonTracker 
+                  dailyData={weatherData?.daily} 
+                  isDay={weatherData?.current?.is_day} 
+                />
+              </ErrorBoundary>
             </div>
 
             {/* Row 2: Hourly Forecast (span 8), Air Quality Panel (span 4) */}
             <div className="grid-r2-c1 animate-in delay-3">
-              <HourlyForecast 
-                hourlyData={weatherData?.hourly} 
-              />
+              <ErrorBoundary>
+                <HourlyForecast 
+                  hourlyData={weatherData?.hourly} 
+                />
+              </ErrorBoundary>
             </div>
 
             <div className="grid-r2-c2 animate-in delay-3">
-              <AirQualityPanel 
-                airQualityData={airQualityData} 
-              />
+              <ErrorBoundary>
+                <AirQualityPanel 
+                  airQualityData={airQualityData} 
+                />
+              </ErrorBoundary>
             </div>
 
             {/* Row 3: RadarMap (span 7), DailyForecast (span 5) */}
             <div className="grid-r3-c1 animate-in delay-4">
-              <RadarMap 
-                lat={location.lat} 
-                lon={location.lon} 
-                locationName={location.name} 
-              />
+              <ErrorBoundary>
+                <RadarMap 
+                  lat={location.lat} 
+                  lon={location.lon} 
+                  locationName={location.name} 
+                />
+              </ErrorBoundary>
             </div>
 
             <div className="grid-r3-c2 animate-in delay-4">
-              <DailyForecast 
-                dailyData={weatherData?.daily} 
-              />
+              <ErrorBoundary>
+                <DailyForecast 
+                  dailyData={weatherData?.daily} 
+                />
+              </ErrorBoundary>
             </div>
 
             {/* Row 4: Smart Rain Predictor Widget (span 12) */}
             <div className="grid-r4-c1 animate-in delay-5">
-              <WillItRainWidget hourlyData={weatherData?.hourly} />
+              <ErrorBoundary><WillItRainWidget hourlyData={weatherData?.hourly} /></ErrorBoundary>
             </div>
 
             {/* Row 5: Model Comparison (span 12) */}
             <div className="grid-r4-c1 animate-in delay-5">
-              <ModelComparison multiModel={weatherData?.multiModel} />
+              <ErrorBoundary><ModelComparison multiModel={weatherData?.multiModel} /></ErrorBoundary>
             </div>
 
             {/* Row 6: HomeNewsFeed (span 12) */}
             <div className="grid-r4-c1 animate-in delay-5">
-              <HomeNewsFeed location={location} />
+              <ErrorBoundary><HomeNewsFeed location={location} /></ErrorBoundary>
             </div>
           </main>
         ) : (
