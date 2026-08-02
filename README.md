@@ -9,6 +9,8 @@ NexusWX is a premium, open-source weather and news hub built with React and Vite
 - 🗺️ **Advanced Maps**: Live global rain radar powered by RainViewer.
 - 💎 **Premium UI**: Apple Vision Pro-style glassmorphism, responsive CSS Grid layout, and polished typography.
 
+<img width="1715" height="914" alt="image" src="https://github.com/user-attachments/assets/5699bb21-42f6-48da-bccc-dd5346303e95" />
+
 ## Quick Start
 1. Clone the repository
 2. Run `npm install`
