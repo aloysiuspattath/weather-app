@@ -1698,29 +1698,31 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
-/* Extra Small Devices (< 480px) */
-@media (max-width: 479px) {
-  .widget-title {
-    font-size: 10px;
+/* Mobile & Touch Target Enhancements (< 768px) */
+@media (max-width: 767px) {
+  .icon-btn {
+    width: 42px !important;
+    height: 42px !important;
   }
 
-  .detail-card .detail-value {
-    font-size: 18px !important;
-  }
-
-  .daily-day {
-    width: 44px !important;
-    font-size: 10px !important;
-  }
-
-  .temp-range {
-    width: 95px !important;
+  .nav-search {
+    width: 100% !important;
+    font-size: 13px !important;
   }
 
   .hourly-item {
-    min-width: 52px !important;
-    padding: 8px 6px !important;
+    min-width: 60px !important;
+    padding: 10px 6px !important;
   }
+}
+
+/* Active Press Micro-Interactions */
+button:active,
+.icon-btn:active,
+.hourly-item:active,
+.widget-panel:active {
+  transform: scale(0.98);
+  transition: transform 0.1s ease;
 }
 
 /* ═══════════════════════════════════════════
