@@ -119,25 +119,26 @@ export async function fetchWeatherNews(category = 'local', location = null) {
   const country = location?.country || 'India';
 
   if (category === 'local') {
-    // Level 1: Village / Town Query (e.g. "Avittathur weather OR rain OR flood")
+    // Level 1: Village / Town Query (e.g. "Santa Cruz Maharashtra India weather OR rain OR flood")
     if (city) {
-      const localResults = await fetchRssQuery(`${city} weather OR rain OR flood`);
+      const exactQuery = `${city} ${state} ${country} weather OR rain OR flood`;
+      const localResults = await fetchRssQuery(exactQuery);
       if (localResults.length > 0) return localResults.slice(0, 6);
     }
 
-    // Level 2: District Level Query (e.g. "Thrissur weather news")
+    // Level 2: District / State Level Query
     if (state && state !== city) {
-      const districtResults = await fetchRssQuery(`${state} weather news OR rain`);
+      const districtResults = await fetchRssQuery(`${state} ${country} weather news OR rain`);
       if (districtResults.length > 0) return districtResults.slice(0, 6);
     }
 
-    // Level 3: State Level Fallback (e.g. "Kerala weather news")
-    const stateResults = await fetchRssQuery(`Kerala weather news OR rain`);
-    return stateResults.slice(0, 6);
+    // Level 3: Hard Fallback
+    const fallbackResults = await fetchRssQuery(`India weather news OR rain`);
+    return fallbackResults.slice(0, 6);
   }
 
   if (category === 'state') {
-    const stateResults = await fetchRssQuery(`${state || 'Kerala'} weather news OR monsoon`);
+    const stateResults = await fetchRssQuery(`${state || 'Maharashtra'} ${country || 'India'} weather news OR monsoon`);
     return stateResults.slice(0, 6);
   }
 
