@@ -1,91 +1,86 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Umbrella, CloudRain, Clock, Sparkles, Droplets, Sun, Cloud } from 'lucide-react';
 
+// Timezone-safe: extract hour number from ISO string like "2026-08-02T18:00"
+function getHourFromISO(isoStr) {
+  return parseInt(isoStr.slice(11, 13), 10);
+}
+function getDateFromISO(isoStr) {
+  return isoStr.slice(8, 10);
+}
+function formatHour12(h) {
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${h12} ${ampm}`;
+}
+
 export default function WillItRainWidget({ hourlyData }) {
-  const [selectedHourIndex, setSelectedHourIndex] = useState(() => {
+  const now = new Date();
+  const currentHourNum = now.getHours();
+  const currentDay = String(now.getDate()).padStart(2, '0');
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const todayStr = `${year}-${month}-${currentDay}`;
+
+  // Find the current hour index using timezone-safe ISO string matching
+  const findCurrentHourIdx = () => {
     if (!hourlyData?.time?.length) return 0;
-    const now = new Date();
-    const currentHour = now.getHours();
-    const today = now.getDate();
+    // Match today + current hour
+    let idx = hourlyData.time.findIndex(t => t.startsWith(todayStr) && getHourFromISO(t) === currentHourNum);
+    if (idx !== -1) return idx;
+    // Fallback: match just the hour
+    idx = hourlyData.time.findIndex(t => getHourFromISO(t) === currentHourNum);
+    return idx !== -1 ? idx : 0;
+  };
 
-    const matchIdx = hourlyData.time.findIndex(t => {
-      const d = new Date(t);
-      return d.getHours() === currentHour && d.getDate() === today;
-    });
-
-    if (matchIdx !== -1) return matchIdx;
-    const hourIdx = hourlyData.time.findIndex(t => new Date(t).getHours() === currentHour);
-    return hourIdx !== -1 ? hourIdx : 0;
-  });
+  const [selectedHourIndex, setSelectedHourIndex] = useState(findCurrentHourIdx);
 
   useEffect(() => {
-    if (hourlyData?.time?.length) {
-      const now = new Date();
-      const currentHour = now.getHours();
-      const today = now.getDate();
-
-      const matchIdx = hourlyData.time.findIndex(t => {
-        const d = new Date(t);
-        return d.getHours() === currentHour && d.getDate() === today;
-      });
-
-      if (matchIdx !== -1) {
-        setSelectedHourIndex(matchIdx);
-      } else {
-        const hourIdx = hourlyData.time.findIndex(t => new Date(t).getHours() === currentHour);
-        setSelectedHourIndex(hourIdx !== -1 ? hourIdx : 0);
-      }
-    }
+    setSelectedHourIndex(findCurrentHourIdx());
   }, [hourlyData]);
 
-  // Extract 24-hour list for today or starting from current forecast
+  // Extract 24-hour list starting from today
   const hoursList = useMemo(() => {
     if (!hourlyData?.time) return [];
-
-    const now = new Date();
-    const todayStr = now.toISOString().split('T')[0];
 
     let startIdx = hourlyData.time.findIndex(t => t.startsWith(todayStr));
     if (startIdx === -1) startIdx = 0;
 
     return hourlyData.time.slice(startIdx, startIdx + 24).map((time, offset) => {
       const globalIdx = startIdx + offset;
-      const date = new Date(time);
-      const hour = date.getHours();
-      const timeLabel = date.toLocaleTimeString([], { hour: 'numeric', hour12: true });
+      const hour = getHourFromISO(time);
+      const dayStr = getDateFromISO(time);
 
       const prob = hourlyData.precipitation_probability?.[globalIdx] ?? 0;
-      const precip = hourlyData.precipitation?.[globalIdx] ?? hourlyData.rain?.[globalIdx] ?? 0;
+      const precip = hourlyData.precipitation?.[globalIdx] ?? 0;
 
       return {
         globalIdx,
         time,
         hour,
-        timeLabel,
+        timeLabel: formatHour12(hour),
         prob,
         precip,
-        isNow: hour === now.getHours() && date.getDate() === now.getDate()
+        isNow: hour === currentHourNum && dayStr === currentDay
       };
     });
   }, [hourlyData]);
 
   // Extract metrics for currently selected hour index
   const prob = hourlyData?.precipitation_probability?.[selectedHourIndex] ?? 0;
-  const precip = hourlyData?.precipitation?.[selectedHourIndex] ?? hourlyData?.rain?.[selectedHourIndex] ?? 0;
+  const precip = hourlyData?.precipitation?.[selectedHourIndex] ?? 0;
 
-  // Format time for selected index (timezone-safe: parse ISO string directly)
+  // Format time for selected index
   const selectedTimeStr = hourlyData?.time?.[selectedHourIndex];
-  let selectedTimeFormatted = 'Selected Hour';
+  let selectedTimeFormatted = 'Now';
   if (selectedTimeStr) {
-    const h = parseInt(selectedTimeStr.slice(11, 13), 10);
-    const ampm = h >= 12 ? 'pm' : 'am';
-    const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-    selectedTimeFormatted = `${h12}:00 ${ampm}`;
+    const h = getHourFromISO(selectedTimeStr);
+    selectedTimeFormatted = `${formatHour12(h).toLowerCase()}`;
   }
 
   // Strict ground rain check: Requires precip >= 0.35 mm/h AND prob >= 45% for active rain risk
   const isDownpourRisk = prob >= 45 && precip >= 0.35;
-  const isPassingShowerRisk = (prob >= 35 || precip > 0.1) && precip < 0.35;
+  const isPassingShowerRisk = prob >= 35 && precip > 0.1 && precip < 0.35;
 
   // Calculate status badge, color bar theme, and advisory
   let statusBadgeText = 'CLEAR / NO RAIN';
@@ -101,25 +96,23 @@ export default function WillItRainWidget({ hourlyData }) {
     badgeBorder = 'rgba(239, 68, 68, 0.4)';
     gaugeFillColor = 'linear-gradient(90deg, #3B82F6 0%, #EF4444 100%)';
   } else if (isPassingShowerRisk) {
-    statusBadgeText = 'LIGHT DRIZZLE / OVERCAST';
+    statusBadgeText = 'LIGHT DRIZZLE POSSIBLE';
     badgeColor = '#F59E0B';
     badgeBg = 'rgba(245, 158, 11, 0.18)';
     badgeBorder = 'rgba(245, 158, 11, 0.4)';
     gaugeFillColor = '#F59E0B';
   }
 
-  // Smart Advisory message logic taking into account precipitation rate (mm)
+  // Smart Advisory message
   let advisoryMessage = '';
   if (isDownpourRisk) {
-    advisoryMessage = `${prob}% Rain Probability (${precip.toFixed(1)} mm/h expected) — Active downpour expected around ${selectedTimeFormatted}. Carry an umbrella!`;
+    advisoryMessage = `${prob}% probability with ${precip.toFixed(1)} mm/h expected rainfall around ${selectedTimeFormatted}. Carry an umbrella!`;
   } else if (isPassingShowerRisk) {
-    if (precip > 0.1) {
-      advisoryMessage = `${prob}% Rain Probability (${precip.toFixed(1)} mm/h expected) — Passing drizzle around ${selectedTimeFormatted}.`;
-    } else {
-      advisoryMessage = `${prob}% Rain Cloud Probability (0.0 mm rainfall expected) — Overcast skies around ${selectedTimeFormatted}, but ground rainfall is 0.0 mm. No umbrella needed.`;
-    }
+    advisoryMessage = `${prob}% cloud probability with light drizzle (${precip.toFixed(1)} mm/h) possible around ${selectedTimeFormatted}.`;
+  } else if (prob > 50 && precip < 0.1) {
+    advisoryMessage = `${prob}% rain cloud probability but 0.0 mm actual rainfall expected around ${selectedTimeFormatted}. Overcast skies, no umbrella needed.`;
   } else {
-    advisoryMessage = `${prob}% Rain Probability (0.0 mm rainfall expected) — Dry weather and clear/overcast conditions around ${selectedTimeFormatted}. Enjoy your day!`;
+    advisoryMessage = `${prob}% rain probability with 0.0 mm rainfall around ${selectedTimeFormatted}. Dry conditions expected. Enjoy your day!`;
   }
 
   return (
@@ -227,8 +220,8 @@ export default function WillItRainWidget({ hourlyData }) {
 
       {/* Advisory Alert Banner */}
       <div style={{
-        background: 'rgba(59, 130, 246, 0.08)',
-        border: '1px solid rgba(59, 130, 246, 0.2)',
+        background: isDownpourRisk ? 'rgba(239, 68, 68, 0.08)' : 'rgba(59, 130, 246, 0.08)',
+        border: isDownpourRisk ? '1px solid rgba(239, 68, 68, 0.2)' : '1px solid rgba(59, 130, 246, 0.2)',
         borderRadius: '10px',
         padding: '12px 14px',
         display: 'flex',
@@ -236,7 +229,7 @@ export default function WillItRainWidget({ hourlyData }) {
         gap: '10px',
         marginBottom: '20px'
       }}>
-        <Sparkles size={16} style={{ color: '#60A5FA', flexShrink: 0 }} />
+        <Sparkles size={16} style={{ color: isDownpourRisk ? '#EF4444' : '#60A5FA', flexShrink: 0 }} />
         <span style={{ fontSize: '12px', color: '#E2E8F0', fontFamily: 'var(--font-main)' }}>
           {advisoryMessage}
         </span>

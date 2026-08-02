@@ -25,9 +25,9 @@ export default function HourlyForecast({ hourlyData }) {
     const precipAmount = hourlyData?.precipitation?.[idx] !== undefined ? hourlyData.precipitation[idx] : 0;
     let code = hourlyData.weather_code[idx];
 
-    // If precipitation is 0.0 mm (or < 0.35 mm) and WMO code is a rain shower code (51-81), normalize to Cloud/Overcast!
-    if (precipAmount < 0.35 && (code >= 51 && code <= 81)) {
-      code = rainProb > 60 ? 3 : 2;
+    // If actual precipitation is near 0 but WMO code claims rain/thunder/snow (51-99), normalize to cloud/overcast
+    if (precipAmount < 0.35 && code >= 51) {
+      code = 3; // Overcast
     }
 
     // Timezone-safe time label: parse hour from ISO string directly

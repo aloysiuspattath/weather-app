@@ -142,9 +142,32 @@ export async function getWeatherData(lat, lon) {
         return Math.round(data.hourly.temperature_2m_best_match?.[i] || 25);
       });
 
-      // 2. Hourly Precipitation: use best_match directly (already verified by Open-Meteo)
-      // The API's current.precipitation is the ground truth (0.00 mm = no rain)
-      data.hourly.precipitation = data.hourly.precipitation_best_match;
+      // 2. Hourly Precipitation: use best_match but override current + past hours with actual ground truth
+      // The forecast may predict rain that never happened — current.precipitation is the real observation
+      const precipArr = [...(data.hourly.precipitation_best_match || [])];
+      if (data.current) {
+        const actualPrecip = Number(data.current.precipitation || 0);
+        const actualRain = Number(data.current.rain || 0);
+        const actualShowers = Number(data.current.showers || 0);
+        const groundTruth = Math.max(actualPrecip, actualRain + actualShowers);
+
+        const now = new Date();
+        const curHour = now.getHours();
+        const curDay = String(now.getDate()).padStart(2, '0');
+        const curMonth = String(now.getMonth() + 1).padStart(2, '0');
+        const todayPrefix = `${now.getFullYear()}-${curMonth}-${curDay}`;
+
+        for (let i = 0; i < data.hourly.time.length; i++) {
+          const t = data.hourly.time[i];
+          if (!t.startsWith(todayPrefix)) continue;
+          const h = parseInt(t.slice(11, 13), 10);
+          // For current hour and all past hours today: use ground truth instead of stale forecast
+          if (h <= curHour) {
+            precipArr[i] = groundTruth;
+          }
+        }
+      }
+      data.hourly.precipitation = precipArr;
 
       data.hourly.relative_humidity_2m = data.hourly.relative_humidity_2m_best_match;
       data.hourly.precipitation_probability = data.hourly.precipitation_probability_best_match;
