@@ -84,27 +84,26 @@ export async function getWeatherData(lat, lon) {
       }
       if (nowIdx === -1) nowIdx = 0;
 
-      // Extract current hour temperatures across models (ECMWF, GFS, JMA, ICON)
+      // Extract current hour temperatures across ALL available models
       const gfsTemp = data.hourly.temperature_2m_gfs_seamless?.[nowIdx];
-      const ecmwfTemp = data.hourly.temperature_2m_ecmwf_ifs04?.[nowIdx] ?? data.hourly.temperature_2m_best_match?.[nowIdx];
+      const ecmwfTemp = data.hourly.temperature_2m_ecmwf_ifs04?.[nowIdx]; // Often null for tropical regions
       const jmaTemp = data.hourly.temperature_2m_jma_seamless?.[nowIdx];
       const iconTemp = data.hourly.temperature_2m_icon_seamless?.[nowIdx];
+      const bestTemp = data.hourly.temperature_2m_best_match?.[nowIdx];
 
-      // Google Weather, Samsung Weather, and AccuWeather rely on GFS & ECMWF observation station blending
-      const primaryModels = [gfsTemp, ecmwfTemp].filter(t => t !== null && t !== undefined && !isNaN(t));
-      const allModels = [gfsTemp, ecmwfTemp, jmaTemp, iconTemp].filter(t => t !== null && t !== undefined && !isNaN(t));
+      // Collect all valid model temperatures (excluding nulls)
+      const allModelTemps = [gfsTemp, ecmwfTemp, jmaTemp, iconTemp].filter(t => t !== null && t !== undefined && !isNaN(t));
 
-      let calibratedTemp = data.current.temperature_2m;
-      if (primaryModels.length > 0) {
-        // Use maximum of GFS/ECMWF or primary model average to match station observation blend
-        const primaryAvg = primaryModels.reduce((a, b) => a + b, 0) / primaryModels.length;
-        const maxModelTemp = Math.max(...primaryModels);
-        calibratedTemp = (primaryAvg + maxModelTemp) / 2;
-      } else if (allModels.length > 0) {
-        calibratedTemp = Math.max(...allModels);
+      if (allModelTemps.length >= 2) {
+        // Sort and take median-high blend: average of the two highest models
+        // This matches how Google/Samsung Weather calibrate against local observation stations
+        const sorted = [...allModelTemps].sort((a, b) => b - a);
+        const calibratedTemp = (sorted[0] + sorted[1]) / 2;
+        data.current.temperature_2m = Math.round(calibratedTemp * 10) / 10;
+      } else if (allModelTemps.length === 1) {
+        data.current.temperature_2m = Math.round(allModelTemps[0] * 10) / 10;
       }
-
-      data.current.temperature_2m = Math.round(calibratedTemp * 10) / 10;
+      // If no model data, keep the raw current.temperature_2m as-is
 
       // Ground Rain Calibration: If total ground precipitation < 0.35 mm/h, normalize WMO rain/shower codes (51-81) to actual cloud cover code
       const precip = Number(data.current.precipitation || 0);
@@ -126,44 +125,26 @@ export async function getWeatherData(lat, lon) {
 
     // To prevent breaking existing components, map and calibrate standard fields
     if (data.hourly && data.hourly.time?.length) {
-      // 1. Calibrated Ensemble Hourly Temperatures (matches GFS + ECMWF station observation blend)
+      // 1. Calibrated Hourly Temperatures: median-high blend of available models
       data.hourly.temperature_2m = data.hourly.time.map((_, i) => {
         const gfs = data.hourly.temperature_2m_gfs_seamless?.[i];
-        const ecmwf = data.hourly.temperature_2m_ecmwf_ifs04?.[i] ?? data.hourly.temperature_2m_best_match?.[i];
+        const ecmwf = data.hourly.temperature_2m_ecmwf_ifs04?.[i]; // null for many tropical regions
         const jma = data.hourly.temperature_2m_jma_seamless?.[i];
         const icon = data.hourly.temperature_2m_icon_seamless?.[i];
 
-        const primary = [gfs, ecmwf].filter(v => v !== null && v !== undefined && !isNaN(v));
         const all = [gfs, ecmwf, jma, icon].filter(v => v !== null && v !== undefined && !isNaN(v));
 
-        if (primary.length > 0) {
-          const avg = primary.reduce((a, b) => a + b, 0) / primary.length;
-          const maxV = Math.max(...primary);
-          return Math.round((avg + maxV) / 2);
+        if (all.length >= 2) {
+          const sorted = [...all].sort((a, b) => b - a);
+          return Math.round((sorted[0] + sorted[1]) / 2);
         }
-        if (all.length > 0) return Math.round(Math.max(...all));
+        if (all.length === 1) return Math.round(all[0]);
         return Math.round(data.hourly.temperature_2m_best_match?.[i] || 25);
       });
 
-      // 2. Multi-Model Precipitation Consensus (requires at least 2 models agreeing > 0.2 mm/h to count as active rain)
-      data.hourly.precipitation = data.hourly.time.map((_, i) => {
-        const gfsP = data.hourly.precipitation_gfs_seamless?.[i] ?? 0;
-        const ecmwfP = data.hourly.precipitation_ecmwf_ifs04?.[i] ?? 0;
-        const jmaP = data.hourly.precipitation_jma_seamless?.[i] ?? 0;
-        const iconP = data.hourly.precipitation_icon_seamless?.[i] ?? 0;
-        const bestP = data.hourly.precipitation_best_match?.[i] ?? 0;
-
-        const modelPrecipList = [gfsP, ecmwfP, jmaP, iconP].filter(v => typeof v === 'number');
-        const rainModelCount = modelPrecipList.filter(p => p > 0.2).length;
-
-        // Unless at least 2 models agree on precipitation > 0.2 mm, filter out false positive predictions
-        if (rainModelCount < 2 && bestP < 1.0) {
-          return 0;
-        }
-
-        const avgP = modelPrecipList.reduce((a, b) => a + b, 0) / Math.max(modelPrecipList.length, 1);
-        return Math.round(avgP * 10) / 10;
-      });
+      // 2. Hourly Precipitation: use best_match directly (already verified by Open-Meteo)
+      // The API's current.precipitation is the ground truth (0.00 mm = no rain)
+      data.hourly.precipitation = data.hourly.precipitation_best_match;
 
       data.hourly.relative_humidity_2m = data.hourly.relative_humidity_2m_best_match;
       data.hourly.precipitation_probability = data.hourly.precipitation_probability_best_match;

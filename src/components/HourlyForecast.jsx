@@ -30,9 +30,15 @@ export default function HourlyForecast({ hourlyData }) {
       code = rainProb > 60 ? 3 : 2;
     }
 
+    // Timezone-safe time label: parse hour from ISO string directly
+    const h = parseInt(time.slice(11, 13), 10);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    const timeLabel = `${h12} ${ampm}`;
+
     return {
-      time: new Date(time).toLocaleTimeString([], { hour: 'numeric', hour12: true }),
-      temp: Math.round(hourlyData.temperature_2m[idx]),
+      time: timeLabel,
+      temp: hourlyData.temperature_2m[idx],
       code,
       precipAmount,
       rainProb,

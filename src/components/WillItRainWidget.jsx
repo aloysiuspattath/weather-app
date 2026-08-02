@@ -73,11 +73,15 @@ export default function WillItRainWidget({ hourlyData }) {
   const prob = hourlyData?.precipitation_probability?.[selectedHourIndex] ?? 0;
   const precip = hourlyData?.precipitation?.[selectedHourIndex] ?? hourlyData?.rain?.[selectedHourIndex] ?? 0;
 
-  // Format time for selected index
+  // Format time for selected index (timezone-safe: parse ISO string directly)
   const selectedTimeStr = hourlyData?.time?.[selectedHourIndex];
-  const selectedTimeFormatted = selectedTimeStr
-    ? new Date(selectedTimeStr).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })
-    : 'Selected Hour';
+  let selectedTimeFormatted = 'Selected Hour';
+  if (selectedTimeStr) {
+    const h = parseInt(selectedTimeStr.slice(11, 13), 10);
+    const ampm = h >= 12 ? 'pm' : 'am';
+    const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    selectedTimeFormatted = `${h12}:00 ${ampm}`;
+  }
 
   // Strict ground rain check: Requires precip >= 0.35 mm/h AND prob >= 45% for active rain risk
   const isDownpourRisk = prob >= 45 && precip >= 0.35;
