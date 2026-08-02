@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { getWeatherDescription } from '../services/weatherApi';
-import { Cloud, CloudLightning, CloudRain, CloudSnow, Sun, MapPin, Clock, Droplets, Wind, Thermometer, Radio, CloudSun } from 'lucide-react';
+import { Cloud, CloudLightning, CloudRain, CloudSnow, Sun, MapPin, Clock, Droplets, Wind, Thermometer, Radio, CloudSun, CloudFog } from 'lucide-react';
 
-function DynamicWeatherVisualizer({ code, isDay, precipRate = 0 }) {
-  const isRain = ((code >= 51 && code <= 67) || (code >= 80 && code <= 81)) && precipRate > 0;
+function DynamicWeatherVisualizer({ code, isDay, isActivelyRaining }) {
+  const isRain = ((code >= 51 && code <= 67) || (code >= 80 && code <= 81)) && isActivelyRaining;
   const isSunny = (code === 0 || code === 1) && isDay !== 0;
   const isClearNight = (code === 0 || code === 1) && isDay === 0;
-  const isCloudy = (code === 2 || code === 3 || code === 45 || code === 48) || (((code >= 51 && code <= 67) || (code >= 80 && code <= 81)) && precipRate === 0);
-  const isSnow = (code >= 71 && code <= 77) || (code >= 85 && code <= 86);
-  const isThunder = code === 82 || (code >= 95 && code <= 99);
+  const isCloudy = (code === 2 || code === 3 || code === 45 || code === 48) || (((code >= 51 && code <= 67) || (code >= 80 && code <= 81)) && !isActivelyRaining);
+  const isSnow = ((code >= 71 && code <= 77) || (code >= 85 && code <= 86)) && isActivelyRaining;
+  const isThunder = (code === 82 || (code >= 95 && code <= 99)) && isActivelyRaining;
 
   let bgClass = 'weather-bg-overcast';
   if (isRain) bgClass = 'weather-bg-rain';
@@ -83,7 +83,7 @@ function DynamicWeatherVisualizer({ code, isDay, precipRate = 0 }) {
         </>
       )}
 
-      {/* Rain Streaks - ONLY render if actively raining (precipRate > 0) */}
+      {/* Rain Streaks - ONLY render if isActivelyRaining is true */}
       {isRain && (
         <div style={{ position: 'absolute', inset: 0 }}>
           {rainDrops.map((drop) => (
@@ -155,18 +155,31 @@ export default function CurrentWeather({ weatherData, locationName, lat, lon }) 
   const feelsLike = Math.round((current.apparent_temperature || temp) * 10) / 10;
   const humidity = current.relative_humidity_2m || 0;
   const windSpeed = Math.round(current.wind_speed_10m || 0);
+  const cloudCover = current.cloud_cover || 0;
   const weatherCode = current.weather_code;
   const isDay = current.is_day;
 
-  // Ground Precipitation Rate Check
-  const precipRate = current.precipitation !== undefined ? current.precipitation : ((current.rain || 0) + (current.showers || 0));
+  // Strict Real Ground Rain Threshold Check (> 0.35 mm/h required to count as active rain)
+  const rawPrecip = Number(current.precipitation || 0);
+  const rawRain = Number(current.rain || 0);
+  const rawShowers = Number(current.showers || 0);
+  const totalPrecip = Math.max(rawPrecip, rawRain + rawShowers);
+
+  // Active ground rain is TRUE ONLY if precipitation exceeds 0.35 mm/h
+  const isActivelyRaining = totalPrecip >= 0.35;
 
   const weatherInfo = getWeatherDescription(weatherCode);
   let description = weatherInfo.desc;
 
-  // Real Ground Rain Check: If precipitation is 0.0mm, do not claim active rain!
-  if (precipRate === 0 && (weatherCode >= 51 && weatherCode <= 81)) {
-    description = "Cloudy / Nearby Rain Risk";
+  // If WMO code says rain/showers but actual ground rainfall is < 0.35 mm, override description!
+  if (!isActivelyRaining && (weatherCode >= 51 && weatherCode <= 81)) {
+    if (cloudCover >= 80) {
+      description = "Overcast";
+    } else if (cloudCover >= 40) {
+      description = "Partly Cloudy";
+    } else {
+      description = "Cloudy / Nearby Rain Risk";
+    }
   }
   
   const highTemp = daily?.temperature_2m_max?.[0] !== undefined ? Math.round(daily.temperature_2m_max[0] * 10) / 10 : '--';
@@ -182,21 +195,19 @@ export default function CurrentWeather({ weatherData, locationName, lat, lon }) 
     WeatherIcon = Sun;
     accentGlow = 'rgba(245, 158, 11, 0.45)';
     iconColor = '#F59E0B';
-  } else if (descLower.includes('rain') || descLower.includes('drizzle')) {
-    if (precipRate > 0) {
-      WeatherIcon = CloudRain;
-      accentGlow = 'rgba(59, 130, 246, 0.45)';
-      iconColor = '#3B82F6';
-    } else {
-      WeatherIcon = CloudSun;
-      accentGlow = 'rgba(148, 163, 184, 0.45)';
-      iconColor = '#94A3B8';
-    }
+  } else if (isActivelyRaining && (descLower.includes('rain') || descLower.includes('drizzle'))) {
+    WeatherIcon = CloudRain;
+    accentGlow = 'rgba(59, 130, 246, 0.45)';
+    iconColor = '#3B82F6';
+  } else if (descLower.includes('partly') || descLower.includes('cloud')) {
+    WeatherIcon = isDay !== 0 ? CloudSun : Cloud;
+    accentGlow = 'rgba(148, 163, 184, 0.45)';
+    iconColor = '#94A3B8';
   } else if (descLower.includes('snow')) {
     WeatherIcon = CloudSnow;
     accentGlow = 'rgba(56, 189, 248, 0.45)';
     iconColor = '#38BDF8';
-  } else if (descLower.includes('thunder') || descLower.includes('storm')) {
+  } else if (isActivelyRaining && (descLower.includes('thunder') || descLower.includes('storm'))) {
     WeatherIcon = CloudLightning;
     accentGlow = 'rgba(168, 85, 247, 0.5)';
     iconColor = '#A855F7';
@@ -215,7 +226,7 @@ export default function CurrentWeather({ weatherData, locationName, lat, lon }) 
       boxShadow: `0 12px 36px rgba(0, 0, 0, 0.6), inset 0 0 45px ${accentGlow}`
     }}>
       {/* Live Dynamic Weather Visualizer Background */}
-      <DynamicWeatherVisualizer code={weatherCode} isDay={isDay} precipRate={precipRate} />
+      <DynamicWeatherVisualizer code={weatherCode} isDay={isDay} isActivelyRaining={isActivelyRaining} />
 
       {/* Header Bar: Title + Live Clock */}
       <div className="widget-header" style={{ width: '100%', marginBottom: '12px', zIndex: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
