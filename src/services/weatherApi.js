@@ -275,11 +275,13 @@ async function getWeatherApiFallback(lat, lon, key) {
   const dailySunset = [];
   const dailyUv = [];
   const dailyPrecipProb = [];
+  const dailyCode = [];
 
   data.forecast.forecastday.forEach(day => {
     dailyTime.push(day.date);
     dailyMax.push(day.day.maxtemp_c);
     dailyMin.push(day.day.mintemp_c);
+    dailyCode.push(mapCode(day.day.condition.code));
     
     const parseTime = (t) => {
       const match = t.match(/(\d+):(\d+) (AM|PM)/);
@@ -355,7 +357,8 @@ async function getWeatherApiFallback(lat, lon, key) {
       sunrise: dailySunrise,
       sunset: dailySunset,
       uv_index_max: dailyUv,
-      precipitation_probability_max: dailyPrecipProb
+      precipitation_probability_max: dailyPrecipProb,
+      weather_code: dailyCode
     },
     multiModel: {
       hourly: { time: hourlyTime, temp: {}, precip: {} },
