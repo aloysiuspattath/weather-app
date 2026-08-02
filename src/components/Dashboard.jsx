@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, MapPin, Navigation, RefreshCw, Radio, Globe, Heart } from 'lucide-react';
+import { Search, MapPin, Navigation, RefreshCw, Radio, Globe, Heart, CloudOff } from 'lucide-react';
 import { getWeatherData, getAirQualityData, searchLocations, detectUserLocation, getWeatherDescription } from '../services/weatherApi';
 import { getTranslation } from '../services/i18n';
 import CurrentWeather from './CurrentWeather';
@@ -267,7 +267,7 @@ export default function Dashboard() {
   if (!loading && !weatherData) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', width: '100vw', backgroundColor: '#050B14', color: '#fff', fontFamily: 'var(--font-ui)', padding: '20px', textAlign: 'center' }}>
-        <LucideIcons.CloudOff size={64} style={{ color: '#EF4444', marginBottom: '20px', filter: 'drop-shadow(0 0 20px rgba(239,68,68,0.5))' }} />
+        <CloudOff size={64} style={{ color: '#EF4444', marginBottom: '20px', filter: 'drop-shadow(0 0 20px rgba(239,68,68,0.5))' }} />
         <h1 style={{ fontSize: '24px', fontWeight: 600, letterSpacing: '-0.02em', marginBottom: '12px' }}>Telemetry Link Severed</h1>
         <p style={{ color: 'var(--text-secondary)', maxWidth: '400px', lineHeight: 1.6, marginBottom: '30px' }}>
           The weather data sources are currently rate-limited. If you are the administrator, please ensure your <b>WeatherAPI</b> key is added to your production environment variables to enable the failover system.
