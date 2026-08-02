@@ -143,11 +143,24 @@ export default function Dashboard() {
     }
   }, []);
 
+  const lastSyncedLocRef = useRef(null);
+
   // Initial Fetch & Location Sync
   useEffect(() => {
     if (location.lat && location.lon) {
       localStorage.setItem('nexus_location', JSON.stringify(location));
-      fetchData(location.lat, location.lon, false);
+      
+      const isSameLocation = lastSyncedLocRef.current?.lat === location.lat && lastSyncedLocRef.current?.lon === location.lon;
+      const cachedLastUpdated = localStorage.getItem('nexus_lastUpdated');
+      const timeSinceLastSync = cachedLastUpdated ? Date.now() - new Date(cachedLastUpdated).getTime() : Infinity;
+      
+      // 5-Minute TTL Cache on Page Reload
+      if (!isSameLocation || timeSinceLastSync > 300000) {
+        lastSyncedLocRef.current = { lat: location.lat, lon: location.lon };
+        fetchData(location.lat, location.lon, false);
+      } else {
+        setLoading(false); // Data is fresh enough, use cache
+      }
     }
   }, [location, fetchData]);
 

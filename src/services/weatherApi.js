@@ -220,9 +220,133 @@ export async function getWeatherData(lat, lon) {
 
     return data;
   } catch (error) {
-    console.error("Error fetching weather data:", error);
+    console.error("Open-Meteo fetch failed:", error);
+    const weatherApiKey = import.meta.env.VITE_WEATHERAPI_KEY;
+    if (weatherApiKey) {
+      console.log("Triggering WeatherAPI Failover System...");
+      try {
+        return await getWeatherApiFallback(lat, lon, weatherApiKey);
+      } catch (fallbackErr) {
+        console.error("WeatherAPI failover also failed:", fallbackErr);
+      }
+    }
     return null;
   }
+}
+
+async function getWeatherApiFallback(lat, lon, key) {
+  const res = await fetch(`https://api.weatherapi.com/v1/forecast.json?key=${key}&q=${lat},${lon}&days=7&alerts=yes`);
+  if (!res.ok) throw new Error("WeatherAPI request failed");
+  const data = await res.json();
+  
+  const mapCode = (c) => {
+    if (c === 1000) return 0;
+    if ([1003, 1006, 1009].includes(c)) return 3;
+    if ([1030, 1135, 1148].includes(c)) return 45;
+    if ([1087, 1273, 1276, 1279, 1282].includes(c)) return 95;
+    if ([1114, 1117, 1210, 1213, 1216, 1219, 1222, 1225, 1255, 1258].includes(c)) return 71;
+    if (c >= 1150 && c <= 1171) return 51;
+    if (c >= 1180 && c <= 1201) return 63;
+    if (c >= 1240 && c <= 1252) return 80;
+    return 3;
+  };
+
+  const hourlyTime = [];
+  const hourlyTemp = [];
+  const hourlyPrecipProb = [];
+  const hourlyPrecip = [];
+  const hourlyCode = [];
+  const hourlyWind = [];
+  const hourlyUv = [];
+
+  const dailyTime = [];
+  const dailyMax = [];
+  const dailyMin = [];
+  const dailySunrise = [];
+  const dailySunset = [];
+  const dailyUv = [];
+  const dailyPrecipProb = [];
+
+  data.forecast.forecastday.forEach(day => {
+    dailyTime.push(day.date);
+    dailyMax.push(day.day.maxtemp_c);
+    dailyMin.push(day.day.mintemp_c);
+    
+    const parseTime = (t) => {
+      const match = t.match(/(\d+):(\d+) (AM|PM)/);
+      if (!match) return `${day.date}T06:00`;
+      let h = parseInt(match[1]);
+      if (match[3] === 'PM' && h !== 12) h += 12;
+      if (match[3] === 'AM' && h === 12) h = 0;
+      return `${day.date}T${String(h).padStart(2,'0')}:${match[2]}`;
+    };
+    
+    dailySunrise.push(parseTime(day.astro.sunrise));
+    dailySunset.push(parseTime(day.astro.sunset));
+    dailyUv.push(day.day.uv);
+    dailyPrecipProb.push(day.day.daily_chance_of_rain);
+
+    day.hour.forEach(h => {
+      hourlyTime.push(h.time.replace(' ', 'T'));
+      hourlyTemp.push(h.temp_c);
+      hourlyPrecipProb.push(h.chance_of_rain);
+      hourlyPrecip.push(h.precip_mm);
+      hourlyCode.push(mapCode(h.condition.code));
+      hourlyWind.push(h.wind_kph);
+      hourlyUv.push(h.uv);
+    });
+  });
+
+  let alerts = [];
+  if (data.alerts?.alert?.length > 0) {
+    alerts = data.alerts.alert.map(a => ({
+      type: a.msgtype || 'WARNING',
+      level: a.severity === 'Extreme' ? 'RED' : (a.severity === 'Severe' ? 'ORANGE' : 'YELLOW'),
+      title: a.event,
+      message: a.headline || a.desc,
+      color: a.severity === 'Extreme' ? '#EF4444' : (a.severity === 'Severe' ? '#F97316' : '#EAB308'),
+      bg: a.severity === 'Extreme' ? 'rgba(239, 68, 68, 0.15)' : (a.severity === 'Severe' ? 'rgba(249, 115, 22, 0.15)' : 'rgba(234, 179, 8, 0.15)')
+    }));
+  }
+
+  return {
+    isFailover: true,
+    alerts,
+    current: {
+      temperature_2m: data.current.temp_c,
+      apparent_temperature: data.current.feelslike_c,
+      relative_humidity_2m: data.current.humidity,
+      wind_speed_10m: data.current.wind_kph,
+      wind_direction_10m: data.current.wind_degree,
+      cloud_cover: data.current.cloud,
+      precipitation: data.current.precip_mm,
+      is_day: data.current.is_day,
+      weather_code: mapCode(data.current.condition.code),
+      uv_index: data.current.uv
+    },
+    hourly: {
+      time: hourlyTime,
+      temperature_2m: hourlyTemp,
+      precipitation_probability: hourlyPrecipProb,
+      precipitation: hourlyPrecip,
+      weather_code: hourlyCode,
+      wind_speed_10m: hourlyWind,
+      uv_index: hourlyUv
+    },
+    daily: {
+      time: dailyTime,
+      temperature_2m_max: dailyMax,
+      temperature_2m_min: dailyMin,
+      sunrise: dailySunrise,
+      sunset: dailySunset,
+      uv_index_max: dailyUv,
+      precipitation_probability_max: dailyPrecipProb
+    },
+    multiModel: {
+      hourly: { time: hourlyTime, temp: {}, precip: {} },
+      daily: { time: dailyTime, tempMax: {}, tempMin: {} }
+    }
+  };
 }
 
 /**
