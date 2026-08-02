@@ -1523,6 +1523,68 @@ h1, h2, h3, h4, h5, h6 {
   animation: starTwinkle 3s ease-in-out infinite;
 }
 
+/* ── Floating Weather Artwork Icon Animation ── */
+@keyframes floatIconBounce {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg) scale(1);
+  }
+  50% {
+    transform: translateY(-8px) rotate(3deg) scale(1.05);
+  }
+}
+
+.animate-float-icon {
+  animation: floatIconBounce 4s ease-in-out infinite;
+}
+
+/* ── Meteor Streak for Night Sky ── */
+@keyframes meteorShoot {
+  0% {
+    transform: translateX(0) translateY(0) scale(1);
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-180px) translateY(140px) scale(0.2);
+    opacity: 0;
+  }
+}
+
+.meteor-streak {
+  position: absolute;
+  top: 15%;
+  right: 10%;
+  width: 90px;
+  height: 1.5px;
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.9) 80%, #ffffff 100%);
+  box-shadow: 0 0 10px rgba(255,255,255,0.8);
+  transform: rotate(-35deg);
+  animation: meteorShoot 5s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+  animation-delay: 2s;
+  pointer-events: none;
+}
+
+/* ── Fog & Mist Drift ── */
+@keyframes fogDrift {
+  0% { transform: translateX(-15%); opacity: 0.25; }
+  50% { transform: translateX(15%); opacity: 0.45; }
+  100% { transform: translateX(-15%); opacity: 0.25; }
+}
+
+.fog-mist-layer {
+  position: absolute;
+  bottom: 0;
+  left: -20%;
+  width: 140%;
+  height: 50%;
+  background: radial-gradient(ellipse at 50% 100%, rgba(148, 163, 184, 0.22) 0%, transparent 75%);
+  filter: blur(12px);
+  animation: fogDrift 16s ease-in-out infinite;
+  pointer-events: none;
+}
+
 /* ═══════════════════════════════════════════
    CUSTOM SCROLLBARS — Precision Glass Theme
    ═══════════════════════════════════════════ */

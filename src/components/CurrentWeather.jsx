@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getWeatherDescription } from '../services/weatherApi';
-import { Cloud, CloudLightning, CloudRain, CloudSnow, Sun, MapPin, Clock, Droplets, Wind, Thermometer, ShieldAlert } from 'lucide-react';
+import { Cloud, CloudLightning, CloudRain, CloudSnow, Sun, MapPin, Clock, Droplets, Wind, Thermometer, Radio } from 'lucide-react';
 
 function DynamicWeatherVisualizer({ code, isDay }) {
   const isRain = (code >= 51 && code <= 67) || (code >= 80 && code <= 81);
@@ -17,32 +17,33 @@ function DynamicWeatherVisualizer({ code, isDay }) {
   else if (isClearNight) bgClass = 'weather-bg-sun-night';
   else if (isSnow) bgClass = 'weather-bg-snow';
 
-  const rainDrops = Array.from({ length: 24 }, (_, i) => ({
+  const rainDrops = Array.from({ length: 28 }, (_, i) => ({
     id: i,
-    left: `${(i * 4.2 + 1) % 96}%`,
+    left: `${(i * 3.6 + 1) % 96}%`,
     height: `${14 + (i % 6) * 3}px`,
-    duration: `${0.45 + (i % 4) * 0.12}s`,
-    delay: `${(i % 8) * 0.1}s`
+    duration: `${0.42 + (i % 4) * 0.12}s`,
+    delay: `${(i % 8) * 0.08}s`
   }));
 
-  const snowFlakes = Array.from({ length: 20 }, (_, i) => ({
+  const snowFlakes = Array.from({ length: 22 }, (_, i) => ({
     id: i,
-    left: `${(i * 4.8 + 2) % 96}%`,
+    left: `${(i * 4.4 + 2) % 96}%`,
     size: `${3 + (i % 4)}px`,
-    duration: `${2.5 + (i % 5) * 0.4}s`,
-    delay: `${(i % 7) * 0.25}s`
+    duration: `${2.4 + (i % 5) * 0.4}s`,
+    delay: `${(i % 7) * 0.22}s`
   }));
 
-  const stars = Array.from({ length: 18 }, (_, i) => ({
+  const stars = Array.from({ length: 20 }, (_, i) => ({
     id: i,
-    top: `${(i * 7.3 + 5) % 75}%`,
-    left: `${(i * 11.2 + 3) % 95}%`,
+    top: `${(i * 6.8 + 4) % 75}%`,
+    left: `${(i * 10.5 + 3) % 95}%`,
     size: `${1.5 + (i % 3)}px`,
-    delay: `${(i % 5) * 0.6}s`
+    delay: `${(i % 5) * 0.5}s`
   }));
 
   return (
     <div className={`weather-overlay-container ${bgClass}`}>
+      {/* Rolling Cloud Layers */}
       {(isCloudy || isRain || isThunder) && (
         <>
           <div className="rolling-cloud-layer-1" />
@@ -50,6 +51,10 @@ function DynamicWeatherVisualizer({ code, isDay }) {
         </>
       )}
 
+      {/* Misty Atmospheric Fog */}
+      {(isCloudy || isRain) && <div className="fog-mist-layer" />}
+
+      {/* Sun Aura & Rotating Rays */}
       {isSunny && (
         <>
           <div className="sun-aura" />
@@ -57,9 +62,11 @@ function DynamicWeatherVisualizer({ code, isDay }) {
         </>
       )}
 
+      {/* Night Sky Stars & Shooting Meteor */}
       {isClearNight && (
         <>
-          <div className="sun-aura" style={{ background: 'radial-gradient(circle, rgba(147, 197, 253, 0.2) 0%, rgba(99, 102, 241, 0.08) 60%, transparent 80%)' }} />
+          <div className="sun-aura" style={{ background: 'radial-gradient(circle, rgba(147, 197, 253, 0.22) 0%, rgba(99, 102, 241, 0.08) 60%, transparent 80%)' }} />
+          <div className="meteor-streak" />
           {stars.map((star) => (
             <div
               key={star.id}
@@ -76,6 +83,7 @@ function DynamicWeatherVisualizer({ code, isDay }) {
         </>
       )}
 
+      {/* Rain Streaks */}
       {(isRain || isThunder) && (
         <div style={{ position: 'absolute', inset: 0 }}>
           {rainDrops.map((drop) => (
@@ -93,6 +101,7 @@ function DynamicWeatherVisualizer({ code, isDay }) {
         </div>
       )}
 
+      {/* Snow Particles */}
       {isSnow && (
         <div style={{ position: 'absolute', inset: 0 }}>
           {snowFlakes.map((flake) => (
@@ -111,9 +120,10 @@ function DynamicWeatherVisualizer({ code, isDay }) {
         </div>
       )}
 
+      {/* Thunderstorm Lightning */}
       {isThunder && <div className="lightning-overlay" />}
 
-      {/* Dark gradient vignette */}
+      {/* Vignette dark gradient overlay */}
       <div style={{
         position: 'absolute',
         inset: 0,
@@ -187,16 +197,16 @@ export default function CurrentWeather({ weatherData, locationName, lat, lon }) 
       justify: 'space-between', 
       minHeight: '340px',
       border: '1px solid rgba(255, 255, 255, 0.12)',
-      boxShadow: `0 12px 36px rgba(0, 0, 0, 0.6), inset 0 0 40px ${accentGlow}`
+      boxShadow: `0 12px 36px rgba(0, 0, 0, 0.6), inset 0 0 45px ${accentGlow}`
     }}>
       {/* Live Dynamic Weather Visualizer Background */}
       <DynamicWeatherVisualizer code={weatherCode} isDay={isDay} />
 
       {/* Header Bar: Title + Live Clock */}
       <div className="widget-header" style={{ width: '100%', marginBottom: '12px', zIndex: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div className="widget-title" style={{ color: 'rgba(255,255,255,0.75)', textShadow: '0 2px 4px rgba(0,0,0,0.6)' }}>
-          <Cloud size={14} style={{ color: iconColor }} />
-          CURRENT CONDITIONS
+        <div className="widget-title" style={{ color: 'rgba(255,255,255,0.75)', textShadow: '0 2px 4px rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <Radio size={12} style={{ color: '#10B981', animation: 'pulse-glow 1.5s infinite' }} />
+          <span>CURRENT CONDITIONS</span>
         </div>
         <div className="font-data" style={{ 
           fontSize: '11px', 
@@ -216,7 +226,7 @@ export default function CurrentWeather({ weatherData, locationName, lat, lon }) 
         </div>
       </div>
       
-      {/* Center Readout & Vibrant 3D Weather Icon Badge */}
+      {/* Center Readout & Animated 3D Floating Weather Icon Badge */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 2, padding: '4px 0' }}>
         <div style={{ flex: 1 }}>
           {/* Temperature Figure */}
@@ -263,21 +273,24 @@ export default function CurrentWeather({ weatherData, locationName, lat, lon }) 
           </div>
         </div>
 
-        {/* Vibrant Glowing Weather Icon Artwork */}
-        <div style={{
-          width: '90px',
-          height: '90px',
-          borderRadius: '50%',
-          background: `radial-gradient(circle, ${iconColor}33 0%, rgba(10,15,25,0.4) 70%)`,
-          border: `1px solid ${iconColor}55`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-          boxShadow: `0 0 32px ${accentGlow}`,
-          animation: 'pulse-glow 3s ease-in-out infinite'
-        }}>
-          <WeatherIcon size={46} style={{ color: iconColor, filter: `drop-shadow(0 0 10px ${iconColor})` }} />
+        {/* Floating 3D Weather Icon Badge with 3D Tilt & Glow */}
+        <div 
+          className="animate-float-icon"
+          style={{
+            width: '94px',
+            height: '94px',
+            borderRadius: '50%',
+            background: `radial-gradient(circle, ${iconColor}33 0%, rgba(10,15,25,0.45) 70%)`,
+            border: `1px solid ${iconColor}66`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            boxShadow: `0 0 36px ${accentGlow}`,
+            cursor: 'pointer'
+          }}
+        >
+          <WeatherIcon size={48} style={{ color: iconColor, filter: `drop-shadow(0 0 12px ${iconColor})` }} />
         </div>
       </div>
 
@@ -288,7 +301,7 @@ export default function CurrentWeather({ weatherData, locationName, lat, lon }) 
         alignItems: 'center',
         gap: '12px',
         margin: '12px 0 10px',
-        background: 'rgba(0, 0, 0, 0.35)',
+        background: 'rgba(0, 0, 0, 0.4)',
         backdropFilter: 'blur(10px)',
         border: '1px solid rgba(255, 255, 255, 0.08)',
         borderRadius: '10px',
