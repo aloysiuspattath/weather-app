@@ -1,4 +1,4 @@
-// Internationalization & Google Translate Integration for NexusWX
+// Clean i18n Dictionary for NexusWX (Manual Opt-In Language Switching)
 export const LANGUAGES = [
   { code: 'en', label: 'English', short: 'EN' },
   { code: 'ml', label: 'മലയാളം', short: 'മല' },
@@ -100,41 +100,4 @@ export const translations = {
 export function getTranslation(lang, key) {
   const langObj = translations[lang] || translations.en;
   return langObj[key] || translations.en[key] || key;
-}
-
-/**
- * Programmatically trigger 100% full-page translation via Google Translate
- */
-export function triggerGoogleTranslate(langCode) {
-  try {
-    const selectElem = document.querySelector('.goog-te-combo');
-    if (selectElem) {
-      selectElem.value = langCode === 'en' ? '' : langCode;
-      selectElem.dispatchEvent(new Event('change'));
-    } else {
-      // Fallback: Cookie based Google Translate trigger
-      const target = langCode === 'en' ? '' : langCode;
-      document.cookie = `googtrans=/en/${target}; path=/; domain=${window.location.hostname}`;
-      document.cookie = `googtrans=/en/${target}; path=/`;
-    }
-  } catch (err) {
-    console.warn("Google Translate trigger warning:", err);
-  }
-}
-
-/**
- * Auto-suggest language based on location region (e.g. Kerala -> Malayalam)
- */
-export function suggestLanguageForLocation(locationObj) {
-  if (!locationObj) return 'en';
-  const locStr = `${locationObj.name || ''} ${locationObj.state || ''} ${locationObj.city || ''} ${locationObj.country || ''}`.toLowerCase();
-
-  if (locStr.includes('kerala') || locStr.includes('kochi') || locStr.includes('thrissur') || locStr.includes('trivandrum') || locStr.includes('calicut') || locStr.includes('malappuram') || locStr.includes('kottayam') || locStr.includes('palakkad') || locStr.includes('kollam') || locStr.includes('alappuzha') || locStr.includes('kannur') || locStr.includes('kasaragod') || locStr.includes('wayanad') || locStr.includes('idukki') || locStr.includes('pathanamthitta') || locStr.includes('avitattathur') || locStr.includes('avittathur') || locStr.includes('irinjalakuda')) {
-    return 'ml'; // Auto-suggest Malayalam for Kerala locations
-  } else if (locStr.includes('spain') || locStr.includes('madrid') || locStr.includes('barcelona') || locStr.includes('mexico')) {
-    return 'es';
-  } else if (locStr.includes('delhi') || locStr.includes('mumbai') || locStr.includes('rajasthan') || locStr.includes('bihar') || locStr.includes('up')) {
-    return 'hi';
-  }
-  return 'en';
 }
