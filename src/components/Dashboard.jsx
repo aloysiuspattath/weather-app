@@ -306,25 +306,29 @@ export default function Dashboard() {
             display: 'flex',
             justify: 'space-between',
             alignItems: 'center',
-            marginBottom: '8px',
+            flexWrap: 'wrap',
+            gap: '16px',
+            marginBottom: '10px',
+            padding: '0 4px',
             fontFamily: 'var(--font-data)', 
-            fontSize: '10px',
+            fontSize: '10.5px',
             letterSpacing: '0.05em', 
             color: 'var(--text-tertiary)'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{
                 width: '6px', height: '6px', borderRadius: '50%',
                 background: isSyncing ? '#60A5FA' : '#10B981',
                 boxShadow: isSyncing ? '0 0 8px #60A5FA' : '0 0 8px #10B981',
-                animation: 'pulse-glow 1.5s infinite'
+                animation: 'pulse-glow 1.5s infinite',
+                flexShrink: 0
               }} />
               <span style={{ color: isSyncing ? '#60A5FA' : 'var(--text-secondary)', fontWeight: 500 }}>
                 {isSyncing ? 'SYNCING LIVE TELEMETRY...' : 'LIVE AUTO-SYNC ACTIVE (60s)'}
               </span>
             </div>
 
-            <div>
+            <div style={{ marginLeft: 'auto', opacity: 0.9 }}>
               LAST SYNC {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </div>
           </div>
