@@ -151,9 +151,11 @@ export default function Dashboard() {
     }
   }, [location, fetchData]);
 
-  // 60-Second Real-Time Live Auto-Refresh & Background Interval Sync Engine
+  // 120-Second Real-Time Live Auto-Refresh & Background Interval Sync Engine
   useEffect(() => {
     if (!location.lat || !location.lon) return;
+
+    const AUTO_SYNC_INTERVAL_MS = 120000; // 120 seconds
 
     const syncInterval = setInterval(() => {
       fetchData(location.lat, location.lon, true);
