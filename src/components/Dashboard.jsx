@@ -47,14 +47,42 @@ function useMouseGlow() {
 
 export default function Dashboard() {
   const [currentTab, setCurrentTab] = useState('Home');
-  const [location, setLocation] = useState(DEFAULT_LOCATION);
-  const [weatherData, setWeatherData] = useState(null);
-  const [airQualityData, setAirQualityData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [location, setLocation] = useState(() => {
+    try {
+      const cached = localStorage.getItem('nexus_location');
+      return cached ? JSON.parse(cached) : DEFAULT_LOCATION;
+    } catch {
+      return DEFAULT_LOCATION;
+    }
+  });
+  const [weatherData, setWeatherData] = useState(() => {
+    try {
+      const cached = localStorage.getItem('nexus_weather');
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [airQualityData, setAirQualityData] = useState(() => {
+    try {
+      const cached = localStorage.getItem('nexus_aqi');
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [loading, setLoading] = useState(() => !localStorage.getItem('nexus_weather'));
   const [isSyncing, setIsSyncing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
-  const [lastUpdated, setLastUpdated] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(() => {
+    try {
+      const cached = localStorage.getItem('nexus_lastUpdated');
+      return cached ? new Date(cached) : null;
+    } catch {
+      return null;
+    }
+  });
   const [lang] = useState('en');
 
   const lastSyncTimeRef = useRef(Date.now());
@@ -90,12 +118,21 @@ export default function Dashboard() {
         getAirQualityData(lat, lon)
       ]);
       
-      setWeatherData(prev => weather !== null ? weather : prev);
-      setAirQualityData(prev => aq !== null ? aq : prev);
+      setWeatherData(prev => {
+        const newData = weather !== null ? weather : prev;
+        if (newData) localStorage.setItem('nexus_weather', JSON.stringify(newData));
+        return newData;
+      });
+      setAirQualityData(prev => {
+        const newData = aq !== null ? aq : prev;
+        if (newData) localStorage.setItem('nexus_aqi', JSON.stringify(newData));
+        return newData;
+      });
       
       if (weather !== null || aq !== null) {
         const now = new Date();
         setLastUpdated(now);
+        localStorage.setItem('nexus_lastUpdated', now.toISOString());
         lastSyncTimeRef.current = now.getTime();
       }
     } catch (err) {
@@ -109,6 +146,7 @@ export default function Dashboard() {
   // Initial Fetch & Location Sync
   useEffect(() => {
     if (location.lat && location.lon) {
+      localStorage.setItem('nexus_location', JSON.stringify(location));
       fetchData(location.lat, location.lon, false);
     }
   }, [location, fetchData]);
