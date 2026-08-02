@@ -33,51 +33,41 @@ export default function RadarMap({ lat, lon, locationName }) {
 
   return (
     <div className="widget-panel" style={{
-      height: '100%', minHeight: '450px', padding: '0',
+      height: '100%', minHeight: '480px', padding: '0',
       overflow: 'hidden', position: 'relative',
       display: 'flex', flexDirection: 'column'
     }}>
-      {/* Top Header & Layer Toggles Bar */}
+      {/* Dedicated Clean Card Header Bar (outside the iframe container) */}
       <div style={{
-        position: 'absolute',
-        top: '12px',
-        left: '12px',
-        right: '12px',
-        zIndex: 1000,
+        padding: '10px 14px',
+        background: 'rgba(8, 12, 22, 0.95)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
         flexWrap: 'wrap',
         gap: '8px',
-        pointerEvents: 'none'
+        zIndex: 10
       }}>
-        {/* Title & Provider Badge */}
+        {/* Title badge */}
         <div style={{
-          pointerEvents: 'auto',
-          background: 'rgba(10, 15, 25, 0.85)',
-          backdropFilter: 'blur(14px)',
-          WebkitBackdropFilter: 'blur(14px)',
-          padding: '6px 12px',
-          borderRadius: '8px',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
-          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4)'
+          gap: '8px'
         }}>
-          <Map size={13} style={{ color: 'var(--accent)' }} />
-          <span className="font-data" style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.08em', color: 'var(--text-primary)' }}>
-            RADAR TELEMETRY
+          <Map size={14} style={{ color: 'var(--accent)' }} />
+          <span className="font-data" style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', color: 'var(--text-primary)' }}>
+            LIVE RADAR TELEMETRY
           </span>
           <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '10px' }}>|</span>
           <Wind size={11} style={{ color: '#FF6B6B' }} />
           <span className="font-data" style={{ fontSize: '9px', color: 'var(--text-tertiary)', letterSpacing: '0.06em' }}>
-            WINDY.COM • ECMWF
+            ECMWF SATELLITE
           </span>
         </div>
 
-        {/* Layer Toggles */}
-        <div className="radar-layer-toggles" style={{ position: 'static', pointerEvents: 'auto' }}>
+        {/* Quick Layer Toggles */}
+        <div className="radar-layer-toggles" style={{ position: 'static' }}>
           {WINDY_LAYERS.map(layer => {
             const Icon = layer.icon;
             return (
@@ -94,8 +84,8 @@ export default function RadarMap({ lat, lon, locationName }) {
         </div>
       </div>
 
-      {/* Windy Embedded Map — Absolute 100% height fill */}
-      <div style={{ flex: 1, minHeight: '450px', position: 'relative', width: '100%' }}>
+      {/* 100% Clean Map Viewport — Zero absolute overlays blocking map controls! */}
+      <div style={{ flex: 1, minHeight: '420px', position: 'relative', width: '100%' }}>
         <iframe
           key={`${activeLayer}-${lat}-${lon}`}
           title="Windy Weather Map"
