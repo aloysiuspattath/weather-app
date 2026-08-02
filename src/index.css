@@ -1443,6 +1443,85 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ═══════════════════════════════════════════
+   DYNAMIC WEATHER ATMOSPHERE BACKGROUNDS
+   ═══════════════════════════════════════════ */
+
+.weather-bg-overcast {
+  background: linear-gradient(160deg, #1e293b 0%, #334155 45%, #0f172a 100%);
+}
+
+.weather-bg-rain {
+  background: linear-gradient(160deg, #0f172a 0%, #1e293b 50%, #090d16 100%);
+}
+
+.weather-bg-thunder {
+  background: linear-gradient(160deg, #1e1b4b 0%, #31103f 50%, #090d16 100%);
+}
+
+.weather-bg-sun-day {
+  background: linear-gradient(160deg, #1e3a8a 0%, #2563eb 45%, #d97706 100%);
+}
+
+.weather-bg-sun-night {
+  background: linear-gradient(160deg, #030712 0%, #0f172a 60%, #1e1b4b 100%);
+}
+
+.weather-bg-snow {
+  background: linear-gradient(160deg, #0f172a 0%, #1e293b 50%, #0284c7 100%);
+}
+
+/* Rolling Cloud Animation for Overcast / Cloudy */
+@keyframes cloudDriftSlow {
+  0% { transform: translateX(-10%) translateY(0); }
+  50% { transform: translateX(10%) translateY(-5px); }
+  100% { transform: translateX(-10%) translateY(0); }
+}
+
+@keyframes cloudDriftFast {
+  0% { transform: translateX(15%) translateY(-3px); }
+  50% { transform: translateX(-15%) translateY(3px); }
+  100% { transform: translateX(15%) translateY(-3px); }
+}
+
+.rolling-cloud-layer-1 {
+  position: absolute;
+  top: -10%;
+  left: -20%;
+  width: 140%;
+  height: 90%;
+  background: radial-gradient(ellipse at 50% 30%, rgba(148, 163, 184, 0.28) 0%, rgba(51, 65, 85, 0.4) 45%, transparent 70%);
+  filter: blur(20px);
+  animation: cloudDriftSlow 24s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.rolling-cloud-layer-2 {
+  position: absolute;
+  top: 15%;
+  left: -10%;
+  width: 130%;
+  height: 70%;
+  background: radial-gradient(ellipse at 40% 40%, rgba(203, 213, 225, 0.18) 0%, rgba(30, 41, 59, 0.45) 50%, transparent 75%);
+  filter: blur(15px);
+  animation: cloudDriftFast 18s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Twinkling Stars for Night */
+@keyframes starTwinkle {
+  0%, 100% { opacity: 0.2; transform: scale(0.8); }
+  50% { opacity: 0.95; transform: scale(1.2); }
+}
+
+.star-particle {
+  position: absolute;
+  background: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #ffffff;
+  animation: starTwinkle 3s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════
    CUSTOM SCROLLBARS — Precision Glass Theme
    ═══════════════════════════════════════════ */
 
