@@ -212,27 +212,51 @@ export default function Dashboard() {
                 onChange={handleSearch}
               />
               {searchResults.length > 0 && (
-                <div className="widget-panel" style={{ 
-                  position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, zIndex: 50, 
-                  padding: '4px', maxHeight: '220px', overflowY: 'auto'
+                <div style={{ 
+                  position: 'absolute', 
+                  top: 'calc(100% + 8px)', 
+                  left: 0, 
+                  width: 'max(100%, 280px)', 
+                  zIndex: 2000, 
+                  padding: '6px', 
+                  maxHeight: '260px', 
+                  overflowY: 'auto',
+                  background: 'rgba(8, 12, 22, 0.96)',
+                  backdropFilter: 'blur(20px)',
+                  WebkitBackdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(255, 255, 255, 0.18)',
+                  borderRadius: '12px',
+                  boxShadow: '0 16px 40px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(59, 130, 246, 0.15)'
                 }}>
                   {searchResults.map((res, i) => (
                     <div 
                       key={i} 
                       style={{ 
-                        padding: '8px 12px', cursor: 'pointer', borderRadius: '6px',
-                        display: 'flex', alignItems: 'center', gap: '8px',
-                        transition: 'background 0.2s', fontSize: '12px',
-                        fontFamily: 'var(--font-data)'
+                        padding: '10px 12px', 
+                        cursor: 'pointer', 
+                        borderRadius: '8px',
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '10px',
+                        transition: 'all 0.15s ease', 
+                        fontSize: '12px',
+                        fontFamily: 'var(--font-data)',
+                        borderBottom: i < searchResults.length - 1 ? '1px solid rgba(255, 255, 255, 0.05)' : 'none'
                       }}
                       onClick={() => handleSelectLocation(res)}
-                      onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.06)'}
-                      onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.2)';
+                        e.currentTarget.style.transform = 'translateX(2px)';
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.transform = 'translateX(0px)';
+                      }}
                     >
-                      <MapPin size={12} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                      <MapPin size={14} style={{ color: 'var(--accent)', flexShrink: 0 }} />
                       <div style={{ overflow: 'hidden' }}>
-                        <div style={{ fontWeight: 500 }}>{res.name}</div>
-                        <div className="text-tertiary" style={{ fontSize: '10px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <div style={{ fontWeight: 600, color: '#ffffff' }}>{res.name}</div>
+                        <div style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.65)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '1px' }}>
                           {res.admin1 ? `${res.admin1}, ` : ''}{res.country || ''}
                         </div>
                       </div>
