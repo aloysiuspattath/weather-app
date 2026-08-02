@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, MapPin, CloudSun, RefreshCw, Navigation } from 'lucide-react';
-import { getWeatherData, getAirQualityData, searchLocations, detectUserLocation } from '../services/weatherApi';
+import { getWeatherData, getAirQualityData, searchLocations, detectUserLocation, getWeatherDescription } from '../services/weatherApi';
 import CurrentWeather from './CurrentWeather';
 import WeatherDetails from './WeatherDetails';
 import HourlyForecast from './HourlyForecast';
@@ -82,6 +82,43 @@ export default function Dashboard() {
     setLoading(false);
     setLastUpdated(new Date());
   }, []);
+
+  // Dynamically update document title, meta description, and social OpenGraph tags per location/weather
+  useEffect(() => {
+    if (!weatherData?.current || !location?.name) return;
+
+    const temp = Math.round(weatherData.current.temperature_2m * 10) / 10;
+    const feels = Math.round((weatherData.current.apparent_temperature || temp) * 10) / 10;
+    const humidity = weatherData.current.relative_humidity_2m || 0;
+    const wind = Math.round(weatherData.current.wind_speed_10m || 0);
+    const descInfo = getWeatherDescription(weatherData.current.weather_code);
+    const descText = descInfo?.desc || 'Live Conditions';
+
+    const pageTitle = `${temp}°C ${descText} in ${location.name} — NexusWX Telemetry`;
+    const pageDesc = `Current live weather in ${location.name}: ${temp}°C, ${descText} (Feels like ${feels}°C, Humidity ${humidity}%, Wind ${wind} km/h). 4-model ensemble forecast (ECMWF, GFS, JMA, ICON) & live radar.`;
+
+    document.title = pageTitle;
+
+    const updateMetaTag = (selector, attribute, value) => {
+      let element = document.querySelector(selector);
+      if (!element) {
+        element = document.createElement('meta');
+        const match = selector.match(/\[(.*?)="(.*?)"\]/);
+        if (match) {
+          element.setAttribute(match[1], match[2]);
+        }
+        document.head.appendChild(element);
+      }
+      element.setAttribute(attribute, value);
+    };
+
+    updateMetaTag('meta[name="description"]', 'content', pageDesc);
+    updateMetaTag('meta[name="title"]', 'content', pageTitle);
+    updateMetaTag('meta[property="og:title"]', 'content', pageTitle);
+    updateMetaTag('meta[property="og:description"]', 'content', pageDesc);
+    updateMetaTag('meta[name="twitter:title"]', 'content', pageTitle);
+    updateMetaTag('meta[name="twitter:description"]', 'content', pageDesc);
+  }, [weatherData, location]);
 
   useEffect(() => {
     fetchData(location.lat, location.lon);
