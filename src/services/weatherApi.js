@@ -281,9 +281,9 @@ async function getWeatherApiFallback(lat, lon, key) {
     currentHumidity = Math.round(85 + (diff * 0.6));
   }
 
-  return {
+  const result = {
     isFailover: true,
-    alerts,
+    alerts: [],
     current: {
       temperature_2m: data.current.temp_c,
       apparent_temperature: data.current.feelslike_c,
@@ -320,6 +320,13 @@ async function getWeatherApiFallback(lat, lon, key) {
       daily: { time: dailyTime, tempMax: {}, tempMin: {} }
     }
   };
+
+  // Generate synthetic regional alerts from the fallback hourly data (same as primary path)
+  const syntheticAlerts = generateRegionalAlerts(result);
+  // Merge: government alerts from WeatherAPI take priority, then add synthetic ones
+  result.alerts = [...alerts, ...syntheticAlerts];
+
+  return result;
 }
 
 /**
