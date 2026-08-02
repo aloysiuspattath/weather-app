@@ -1,0 +1,24 @@
+# NexusWX Telemetry & Weather Intelligence Station
+> https://weather.techfliq.com/
+
+NexusWX is a professional real-time meteorological telemetry web application providing multi-model weather forecasts, live satellite radar, flood risk advisories, air quality metrics, and regional weather news.
+
+## Key System Features
+- **Multi-Model Consensus Forecasting**: Compares 4 global weather models (ECMWF HRES, GFS, JMA, ICON) for temperature, wind speed, and precipitation consensus.
+- **Smart Rain & Downpour Predictor**: Differentiates between rain cloud probability (%) vs actual hourly precipitation rate (mm/h).
+- **Meteorological Hazard Advisories**: Automated real-time alerts for Extreme Heat, UV Index danger, Urban Waterlogging, Flash Floods, and High Wind gusts.
+- **Live Satellite Radar Station**: Interactive Windy & RainViewer radar overlays with timestamp animation controls.
+- **Sun & Moon Trajectory Tracker**: 180° parabolic solar elevation curve with daylight completion percentage and automatic night-time moon phase tracking.
+- **Hierarchical Regional News Hub**: 3-tier location fallback (Village -> District -> State) parsing verified news dispatches while excluding weather aggregators.
+
+## Technical Architecture
+- **Framework**: Vite + React 18
+- **Primary APIs**: Open-Meteo Weather API, RainViewer Radar API, Open-Meteo Air Quality API, Google News RSS
+- **Canonical Domain**: https://weather.techfliq.com/
+- **Google Analytics GA4 ID**: G-XVZLRQ016M
+- **Publisher & Maintainer**: Techfliq (https://techfliq.com)
+
+## Full AI Documentation
+- [Full LLM Specification & API Schemas](https://weather.techfliq.com/llms-full.txt)
+- [XML Sitemap](https://weather.techfliq.com/sitemap.xml)
+- [Robots Directives](https://weather.techfliq.com/robots.txt)

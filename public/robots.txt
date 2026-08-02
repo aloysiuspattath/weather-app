@@ -1,4 +1,33 @@
+# Robots.txt for NexusWX Weather Telemetry Dashboard
+# https://weather.techfliq.com/
+
 User-agent: *
 Allow: /
+Allow: /sitemap.xml
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /logo.svg
+Allow: /favicon.svg
+Allow: /og-image.svg
 
+# Sitemaps
 Sitemap: https://weather.techfliq.com/sitemap.xml
+
+# LLM & AI Crawler Rules
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: CCBot
+Allow: /

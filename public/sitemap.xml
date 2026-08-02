@@ -1,9 +1,43 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
+  
+  <!-- Main Dashboard Overview -->
   <url>
     <loc>https://weather.techfliq.com/</loc>
     <lastmod>2026-08-02</lastmod>
     <changefreq>always</changefreq>
     <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://weather.techfliq.com/og-image.svg</image:loc>
+      <image:title>NexusWX Live Weather Radar &amp; Telemetry Dashboard</image:title>
+      <image:caption>Next-gen meteorological station with multi-model consensus (ECMWF, GFS, JMA, ICON), live radar, rain probability, and severe hazard alerts.</image:caption>
+    </image:image>
   </url>
+
+  <!-- Live Satellite Radar Station -->
+  <url>
+    <loc>https://weather.techfliq.com/#radar</loc>
+    <lastmod>2026-08-02</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Multi-Model Consensus Hub -->
+  <url>
+    <loc>https://weather.techfliq.com/#models</loc>
+    <lastmod>2026-08-02</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Regional Weather News Intelligence Hub -->
+  <url>
+    <loc>https://weather.techfliq.com/#news</loc>
+    <lastmod>2026-08-02</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
 </urlset>

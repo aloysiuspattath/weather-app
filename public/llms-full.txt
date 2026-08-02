@@ -1,0 +1,70 @@
+# NexusWX Full System Specification & Meteorological Telemetry API Reference
+> https://weather.techfliq.com/
+
+This document provides a comprehensive technical overview of the data models, algorithm thresholds, ensemble logic, and API endpoints utilized by NexusWX.
+
+---
+
+## 1. Ensemble Forecast Models
+NexusWX aggregates 4 global numerical weather prediction (NWP) models via Open-Meteo:
+1. **ECMWF HRES** (European Centre for Medium-Range Weather Forecasts - 9km resolution)
+2. **GFS** (Global Forecast System - NCEP / NOAA - 13km resolution)
+3. **ICON** (Deutscher Wetterdienst - 13km resolution)
+4. **JMA** (Japan Meteorological Agency - 20km resolution)
+
+### Consensus Computation
+- **Model Disparity Metric**: Computed as the standard deviation $\sigma$ across the 4 models for temperature ($T$), precipitation ($P$), and wind speed ($W$).
+- **Agreement Level**:
+  - High Consensus: $\sigma_T < 0.8^\circ\text{C}$
+  - Moderate Variance: $0.8^\circ\text{C} \le \sigma_T \le 1.8^\circ\text{C}$
+  - Model Divergence: $\sigma_T > 1.8^\circ\text{C}$
+
+---
+
+## 2. Hazard & Warning Thresholds
+Evaluated continuously in `WeatherWarningsWidget.jsx`:
+
+- **Flash Flood Warning**:
+  - Criterion: 24-hour cumulative rainfall $\ge 35\text{ mm}$ OR peak hourly rate $\ge 12\text{ mm/h}$.
+  - Advisory: "HIGH FLASH FLOOD RISK — Heavy cumulative rainfall detected. Exercise extreme caution in low-lying areas."
+
+- **Urban Waterlogging Advisory**:
+  - Criterion: 24-hour cumulative rainfall $\ge 18\text{ mm}$.
+  - Advisory: "URBAN WATERLOGGING ADVISORY — Prolonged rainfall may cause localized street flooding."
+
+- **Extreme Heat Warning**:
+  - Criterion: `apparent_temperature` $\ge 38^\circ\text{C}$.
+  - Advisory: "EXTREME HEAT HAZARD — Danger of heat exhaustion and sunstroke. Stay hydrated."
+
+- **Dangerous UV Index**:
+  - Criterion: `uv_index` $\ge 8$.
+  - Advisory: "VERY HIGH UV INDEX — Avoid direct sun exposure between 11 AM and 3 PM."
+
+- **High Wind Warning**:
+  - Criterion: `wind_speed_10m` $\ge 40\text{ km/h}$.
+  - Advisory: "HIGH WIND WARNING — Strong wind gusts detected. Secure loose outdoor objects."
+
+---
+
+## 3. Location Detection & Hierarchical News Strategy
+- **Geolocation**: Browser Geolocation API -> Reverse Geocode via Open-Meteo Geocoding API (`https://geocoding-api.open-meteo.com/v1/search`).
+- **Hierarchical News Fallback**:
+  1. Town / Village query: `{city} weather OR rain OR flood`
+  2. District query: `{state} weather news OR rain`
+  3. State fallback: `Kerala weather news OR rain`
+- **Domain Exclusion Filter**: Excludes generic aggregators (`msn.com`, `accuweather.com`, `weather.com`, `wunderground.com`).
+
+---
+
+## 4. Primary API Endpoints
+- Weather Forecast: `https://api.open-meteo.com/v1/forecast`
+- Ensemble Comparison: `https://ensemble-api.open-meteo.com/v1/ensemble`
+- Air Quality: `https://air-quality-api.open-meteo.com/v1/air-quality`
+- RainViewer Radar: `https://api.rainviewer.com/public/weather-maps.json`
+
+---
+
+## 5. Contact & Publication Metadata
+- Web Application URL: https://weather.techfliq.com/
+- Maintainer: Techfliq
+- Contact Email: support@techfliq.com
