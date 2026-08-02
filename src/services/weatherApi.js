@@ -189,6 +189,35 @@ export async function getWeatherData(lat, lon) {
     // Generate Rule-Based Regional Alerts (IMD / WMO style)
     data.alerts = generateRegionalAlerts(data);
 
+    // WeatherAPI.com Integration for High-Precision Humidity & Official Govt Alerts
+    const weatherApiKey = import.meta.env.VITE_WEATHERAPI_KEY;
+    if (weatherApiKey) {
+      try {
+        const wapiRes = await fetch(`https://api.weatherapi.com/v1/forecast.json?key=${weatherApiKey}&q=${lat},${lon}&alerts=yes`);
+        if (wapiRes.ok) {
+          const wapiData = await wapiRes.json();
+          // 1. Correct Humidity (WeatherAPI is highly accurate for tropical regions)
+          if (wapiData?.current?.humidity) {
+            data.current.relative_humidity_2m = wapiData.current.humidity;
+          }
+          // 2. Official Governmental Alerts (Override synthetic alerts if government issued any)
+          if (wapiData?.alerts?.alert?.length > 0) {
+            const officialAlerts = wapiData.alerts.alert.map(a => ({
+              type: a.msgtype || 'WARNING',
+              level: a.severity === 'Extreme' ? 'RED' : (a.severity === 'Severe' ? 'ORANGE' : 'YELLOW'),
+              title: a.event,
+              message: a.headline || a.desc,
+              color: a.severity === 'Extreme' ? '#EF4444' : (a.severity === 'Severe' ? '#F97316' : '#EAB308'),
+              bg: a.severity === 'Extreme' ? 'rgba(239, 68, 68, 0.15)' : (a.severity === 'Severe' ? 'rgba(249, 115, 22, 0.15)' : 'rgba(234, 179, 8, 0.15)')
+            }));
+            data.alerts = officialAlerts;
+          }
+        }
+      } catch (err) {
+        console.error("Failed to merge WeatherAPI data:", err);
+      }
+    }
+
     return data;
   } catch (error) {
     console.error("Error fetching weather data:", error);
