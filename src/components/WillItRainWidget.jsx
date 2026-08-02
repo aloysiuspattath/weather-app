@@ -200,10 +200,11 @@ export default function WillItRainWidget({ hourlyData }) {
           borderRadius: '12px',
           padding: '14px 18px',
           display: 'flex',
-          justify: 'space-between',
-          alignItems: 'center'
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: '16px'
         }}>
-          <div>
+          <div style={{ minWidth: 0 }}>
             <div className="text-tertiary font-data" style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>
               EXPECTED PRECIPITATION RATE
             </div>
@@ -214,9 +215,10 @@ export default function WillItRainWidget({ hourlyData }) {
 
           <div style={{ 
             width: '42px', height: '42px', borderRadius: '50%', 
+            flexShrink: 0,
             background: precip > 0.35 ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255, 255, 255, 0.05)',
             border: precip > 0.35 ? '1px solid rgba(59, 130, 246, 0.4)' : '1px solid rgba(255, 255, 255, 0.08)',
-            display: 'flex', alignItems: 'center', justify: 'center'
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
           }}>
             {precip > 0.35 ? <CloudRain size={20} style={{ color: '#60A5FA' }} /> : <Cloud size={20} style={{ color: 'var(--text-tertiary)' }} />}
           </div>
