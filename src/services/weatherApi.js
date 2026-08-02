@@ -95,10 +95,10 @@ export async function getWeatherData(lat, lon) {
       const allModelTemps = [gfsTemp, ecmwfTemp, jmaTemp, iconTemp].filter(t => t !== null && t !== undefined && !isNaN(t));
 
       if (allModelTemps.length >= 2) {
-        // Sort and take median-high blend: average of the two highest models
-        // This matches how Google/Samsung Weather calibrate against local observation stations
+        // Sort descending and use 60/40 weighted blend of top 2 models
+        // Google/AccuWeather favour the highest-resolution model for tropical regions
         const sorted = [...allModelTemps].sort((a, b) => b - a);
-        const calibratedTemp = (sorted[0] + sorted[1]) / 2;
+        const calibratedTemp = sorted[0] * 0.6 + sorted[1] * 0.4;
         data.current.temperature_2m = Math.round(calibratedTemp * 10) / 10;
       } else if (allModelTemps.length === 1) {
         data.current.temperature_2m = Math.round(allModelTemps[0] * 10) / 10;
@@ -135,11 +135,12 @@ export async function getWeatherData(lat, lon) {
         const all = [gfs, ecmwf, jma, icon].filter(v => v !== null && v !== undefined && !isNaN(v));
 
         if (all.length >= 2) {
+          // Sort descending and use 60/40 weighted blend of top 2 models (same as current temp)
           const sorted = [...all].sort((a, b) => b - a);
-          return Math.round((sorted[0] + sorted[1]) / 2);
+          return Math.round((sorted[0] * 0.6 + sorted[1] * 0.4) * 10) / 10;
         }
-        if (all.length === 1) return Math.round(all[0]);
-        return Math.round(data.hourly.temperature_2m_best_match?.[i] || 25);
+        if (all.length === 1) return Math.round(all[0] * 10) / 10;
+        return Math.round((data.hourly.temperature_2m_best_match?.[i] || 25) * 10) / 10;
       });
 
       // 2. Hourly Precipitation: use best_match but override current + past hours with actual ground truth

@@ -83,7 +83,7 @@ export default function HourlyForecast({ hourlyData }) {
               <IconComp size={20} strokeWidth={1.8} color={iconColor} style={{ margin: '4px auto', filter: `drop-shadow(0 0 6px ${iconColor}66)` }} />
               
               {/* Temperature */}
-              <span className="hourly-temp" style={{ fontSize: '13px', fontWeight: 600 }}>{hour.temp}°</span>
+              <span className="hourly-temp" style={{ fontSize: '13px', fontWeight: 600 }}>{Number(hour.temp).toFixed(1)}°</span>
 
               {/* Rain Chance Pill */}
               <div style={{ 
