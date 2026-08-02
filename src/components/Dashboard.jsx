@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, MapPin, CloudSun, RefreshCw, Navigation, Globe } from 'lucide-react';
 import { getWeatherData, getAirQualityData, searchLocations, detectUserLocation, getWeatherDescription } from '../services/weatherApi';
-import { LANGUAGES, getTranslation } from '../services/i18n';
+import { LANGUAGES, getTranslation, triggerGoogleTranslate, suggestLanguageForLocation } from '../services/i18n';
 import CurrentWeather from './CurrentWeather';
 import WeatherDetails from './WeatherDetails';
 import HourlyForecast from './HourlyForecast';
@@ -124,7 +124,21 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchData(location.lat, location.lon);
+    
+    // Auto-suggest language based on location region (e.g., Malayalam for Kerala)
+    if (location?.name) {
+      const suggested = suggestLanguageForLocation(location);
+      if (suggested && suggested !== lang) {
+        setLang(suggested);
+        triggerGoogleTranslate(suggested);
+      }
+    }
   }, [location, fetchData]);
+
+  const handleLanguageChange = (code) => {
+    setLang(code);
+    triggerGoogleTranslate(code);
+  };
 
   const handleSearch = async (e) => {
     const value = e.target.value;
@@ -280,7 +294,7 @@ export default function Dashboard() {
               {LANGUAGES.map(l => (
                 <button
                   key={l.code}
-                  onClick={() => setLang(l.code)}
+                  onClick={() => handleLanguageChange(l.code)}
                   style={{
                     background: lang === l.code ? 'rgba(59, 130, 246, 0.3)' : 'transparent',
                     border: lang === l.code ? '1px solid var(--accent)' : '1px solid transparent',
