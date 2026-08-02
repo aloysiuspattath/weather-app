@@ -170,20 +170,20 @@ export async function getWeatherData(lat, lon) {
       }
       data.hourly.precipitation = precipArr;
 
-      data.hourly.relative_humidity_2m = data.hourly.relative_humidity_2m_best_match;
-      data.hourly.precipitation_probability = data.hourly.precipitation_probability_best_match;
-      data.hourly.weather_code = data.hourly.weather_code_best_match;
-      data.hourly.wind_speed_10m = data.hourly.wind_speed_10m_best_match;
-      data.hourly.uv_index = data.hourly.uv_index_best_match;
+      data.hourly.relative_humidity_2m = data.hourly.relative_humidity_2m_best_match || data.hourly.relative_humidity_2m;
+      data.hourly.precipitation_probability = data.hourly.precipitation_probability_best_match || data.hourly.precipitation_probability;
+      data.hourly.weather_code = data.hourly.weather_code_best_match || data.hourly.weather_code;
+      data.hourly.wind_speed_10m = data.hourly.wind_speed_10m_best_match || data.hourly.wind_speed_10m;
+      data.hourly.uv_index = data.hourly.uv_index_best_match || data.hourly.uv_index;
     }
     if (data.daily) {
-      data.daily.weather_code = data.daily.weather_code_best_match;
-      data.daily.temperature_2m_max = data.daily.temperature_2m_max_best_match;
-      data.daily.temperature_2m_min = data.daily.temperature_2m_min_best_match;
-      data.daily.sunrise = data.daily.sunrise_best_match;
-      data.daily.sunset = data.daily.sunset_best_match;
-      data.daily.uv_index_max = data.daily.uv_index_max_best_match;
-      data.daily.precipitation_probability_max = data.daily.precipitation_probability_max_best_match;
+      data.daily.weather_code = data.daily.weather_code_best_match || data.daily.weather_code;
+      data.daily.temperature_2m_max = data.daily.temperature_2m_max_best_match || data.daily.temperature_2m_max;
+      data.daily.temperature_2m_min = data.daily.temperature_2m_min_best_match || data.daily.temperature_2m_min;
+      data.daily.sunrise = data.daily.sunrise_best_match || data.daily.sunrise;
+      data.daily.sunset = data.daily.sunset_best_match || data.daily.sunset;
+      data.daily.uv_index_max = data.daily.uv_index_max_best_match || data.daily.uv_index_max;
+      data.daily.precipitation_probability_max = data.daily.precipitation_probability_max_best_match || data.daily.precipitation_probability_max;
     }
 
     // Generate Rule-Based Regional Alerts (IMD / WMO style)
