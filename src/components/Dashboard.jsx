@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, MapPin, Navigation, RefreshCw, Radio, Globe, Heart, CloudOff } from 'lucide-react';
+import { Search, MapPin, Navigation, RefreshCw, Radio, Globe, Heart, CloudOff, Clock } from 'lucide-react';
 import { getWeatherData, getAirQualityData, searchLocations, detectUserLocation, getWeatherDescription } from '../services/weatherApi';
 import { getTranslation } from '../services/i18n';
 import CurrentWeather from './CurrentWeather';
@@ -85,6 +85,15 @@ export default function Dashboard() {
     }
   });
   const [lang] = useState('en');
+  const [showRecents, setShowRecents] = useState(false);
+  const [recentSearches, setRecentSearches] = useState(() => {
+    try {
+      const cached = localStorage.getItem('nexus_recent_searches');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
 
   const lastSyncTimeRef = useRef(Date.now());
 
@@ -244,16 +253,26 @@ export default function Dashboard() {
   };
 
   const handleSelectLocation = (result) => {
-    setLocation({
+    const newLoc = {
       name: `${result.name}${result.admin1 ? `, ${result.admin1}` : ''}`,
       city: result.name,
       state: result.admin1 || '',
       country: result.country || '',
       lat: result.latitude,
       lon: result.longitude
+    };
+    setLocation(newLoc);
+
+    setRecentSearches(prev => {
+      const filtered = prev.filter(item => Math.abs(item.lat - newLoc.lat) > 0.01 || Math.abs(item.lon - newLoc.lon) > 0.01);
+      const updated = [newLoc, ...filtered].slice(0, 5);
+      localStorage.setItem('nexus_recent_searches', JSON.stringify(updated));
+      return updated;
     });
+
     setSearchQuery('');
     setSearchResults([]);
+    setShowRecents(false);
   };
 
   if (loading && !weatherData) {
@@ -324,6 +343,8 @@ export default function Dashboard() {
                 placeholder={getTranslation(lang, 'searchPlaceholder')} 
                 value={searchQuery}
                 onChange={handleSearch}
+                onFocus={() => setShowRecents(true)}
+                onBlur={() => setTimeout(() => setShowRecents(false), 200)}
               />
               {searchResults.length > 0 && (
                 <div style={{ 
@@ -370,6 +391,63 @@ export default function Dashboard() {
                         <div style={{ fontWeight: 600, color: '#ffffff' }}>{res.name}</div>
                         <div style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.65)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '1px' }}>
                           {res.admin1 ? `${res.admin1}, ` : ''}{res.country || ''}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {searchResults.length === 0 && showRecents && recentSearches.length > 0 && (
+                <div style={{ 
+                  position: 'absolute', 
+                  top: 'calc(100% + 8px)', 
+                  left: 0, 
+                  width: 'max(100%, 280px)', 
+                  zIndex: 99999, 
+                  padding: '6px', 
+                  maxHeight: '260px', 
+                  overflowY: 'auto',
+                  background: '#090D16',
+                  border: '1px solid rgba(255, 255, 255, 0.22)',
+                  borderRadius: '12px',
+                  boxShadow: '0 20px 50px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(59, 130, 246, 0.3)'
+                }}>
+                  <div style={{ padding: '8px 12px', fontSize: '10px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'var(--font-data)' }}>
+                    Recent Telemetry Nodes
+                  </div>
+                  {recentSearches.map((res, i) => (
+                    <div 
+                      key={i} 
+                      style={{ 
+                        padding: '10px 12px', 
+                        cursor: 'pointer', 
+                        borderRadius: '8px',
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '10px',
+                        transition: 'all 0.15s ease', 
+                        fontSize: '12px',
+                        fontFamily: 'var(--font-data)',
+                        borderBottom: i < recentSearches.length - 1 ? '1px solid rgba(255, 255, 255, 0.05)' : 'none'
+                      }}
+                      onMouseDown={(e) => {
+                        e.preventDefault(); // Prevents input blur
+                        handleSelectLocation({ ...res, latitude: res.lat, longitude: res.lon, admin1: res.state });
+                      }}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.2)';
+                        e.currentTarget.style.transform = 'translateX(2px)';
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.transform = 'translateX(0px)';
+                      }}
+                    >
+                      <Clock size={14} style={{ color: 'var(--text-secondary)', flexShrink: 0 }} />
+                      <div style={{ overflow: 'hidden' }}>
+                        <div style={{ fontWeight: 600, color: '#ffffff' }}>{res.name}</div>
+                        <div style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.65)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '1px' }}>
+                          {res.state ? `${res.state}, ` : ''}{res.country || ''}
                         </div>
                       </div>
                     </div>
