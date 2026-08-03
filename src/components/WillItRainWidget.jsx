@@ -106,11 +106,11 @@ export default function WillItRainWidget({ hourlyData }) {
   // Smart Advisory message
   let advisoryMessage = '';
   if (isDownpourRisk) {
-    advisoryMessage = `${prob}% probability with ${precip.toFixed(1)} mm/h expected rainfall around ${selectedTimeFormatted}. Carry an umbrella!`;
+    advisoryMessage = `${prob}% chance of rain with ${precip.toFixed(1)} mm/h expected rainfall around ${selectedTimeFormatted}. Carry an umbrella!`;
   } else if (isPassingShowerRisk) {
-    advisoryMessage = `${prob}% cloud probability with light drizzle (${precip.toFixed(1)} mm/h) possible around ${selectedTimeFormatted}.`;
+    advisoryMessage = `${prob}% chance of rain with light drizzle (${precip.toFixed(1)} mm/h) possible around ${selectedTimeFormatted}.`;
   } else if (prob > 50) {
-    advisoryMessage = `High cloud cover (${prob}%) but minimal rainfall (${precip.toFixed(1)} mm/h) expected around ${selectedTimeFormatted}. Overcast skies, no umbrella needed.`;
+    advisoryMessage = `High chance of precipitation (${prob}%) but minimal rainfall volume (${precip.toFixed(1)} mm/h) expected around ${selectedTimeFormatted}. No umbrella needed.`;
   } else {
     advisoryMessage = `Low rain risk (${prob}%) with ${precip.toFixed(1)} mm/h rainfall around ${selectedTimeFormatted}. Dry conditions expected. Enjoy your day!`;
   }
@@ -153,7 +153,7 @@ export default function WillItRainWidget({ hourlyData }) {
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
             <span className="text-secondary font-data" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              RAIN CLOUD PROBABILITY ({selectedTimeFormatted})
+              PRECIPITATION PROBABILITY ({selectedTimeFormatted})
             </span>
             <span className="font-data" style={{ fontSize: '28px', fontWeight: 700, color: '#ffffff' }}>
               {prob}<span style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>%</span>
