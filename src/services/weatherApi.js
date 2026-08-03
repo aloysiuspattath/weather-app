@@ -107,8 +107,8 @@ export async function getWeatherData(lat, lon) {
       const allModelTemps = [gfsTemp, ecmwfTemp, jmaTemp, iconTemp].filter(t => t !== null && t !== undefined && !isNaN(t));
 
       if (allModelTemps.length >= 2) {
-        const sorted = [...allModelTemps].sort((a, b) => b - a);
-        data.current.temperature_2m = Math.round((sorted[0] * 0.6 + sorted[1] * 0.4) * 10) / 10;
+        // We no longer artificially overwrite the current temperature with the hottest models.
+        // We trust Open-Meteo's observational nowcast for the most accurate ground truth.
       }
     }
 
