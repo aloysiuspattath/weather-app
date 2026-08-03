@@ -108,7 +108,7 @@ export default function WillItRainWidget({ hourlyData }) {
   if (isDownpourRisk) {
     advisoryMessage = `${prob}% chance of rain with ${precip.toFixed(1)} mm/h expected rainfall around ${selectedTimeFormatted}. Carry an umbrella!`;
   } else if (isPassingShowerRisk) {
-    advisoryMessage = `${prob}% chance of rain with light drizzle (${precip.toFixed(1)} mm/h) possible around ${selectedTimeFormatted}.`;
+    advisoryMessage = `${prob}% chance of rain with light drizzle (${precip.toFixed(1)} mm/h) possible around ${selectedTimeFormatted}. Carry an umbrella!`;
   } else if (prob > 50) {
     advisoryMessage = `High chance of precipitation (${prob}%) but minimal rainfall volume (${precip.toFixed(1)} mm/h) expected around ${selectedTimeFormatted}. No umbrella needed.`;
   } else {
