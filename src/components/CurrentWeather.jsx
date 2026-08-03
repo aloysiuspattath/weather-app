@@ -159,19 +159,21 @@ export default function CurrentWeather({ weatherData, locationName, lat, lon }) 
   const weatherCode = current.weather_code;
   const isDay = current.is_day;
 
-  // Strict Real Ground Rain Threshold Check (> 0.35 mm/h required to count as active rain)
+  // Strict Real Ground Rain Threshold Check (> 0.1 mm/h required to count as active rain)
   const rawPrecip = Number(current.precipitation || 0);
   const rawRain = Number(current.rain || 0);
   const rawShowers = Number(current.showers || 0);
   const totalPrecip = Math.max(rawPrecip, rawRain + rawShowers);
 
-  // Active ground rain is TRUE ONLY if precipitation exceeds 0.35 mm/h
-  const isActivelyRaining = totalPrecip >= 0.35;
+  // Active ground rain is TRUE ONLY if precipitation exceeds 0.1 mm/h
+  // We lowered this from 0.35mm because physical weather stations often report 
+  // "Light Rain" conditions before accumulating 0.35mm in the gauge.
+  const isActivelyRaining = totalPrecip >= 0.1;
 
   const weatherInfo = getWeatherDescription(weatherCode);
   let description = weatherInfo.desc;
 
-  // If WMO code says rain/showers but actual ground rainfall is < 0.35 mm, override description!
+  // If WMO code says rain/showers but actual ground rainfall is < 0.1 mm, override description!
   if (!isActivelyRaining && (weatherCode >= 51 && weatherCode <= 81)) {
     if (cloudCover >= 80) {
       description = "Overcast";
